@@ -8,6 +8,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.hibernate.annotations.Immutable;
@@ -45,7 +47,8 @@ public class AuditEvent extends BaseEntity {
         this.documentId = documentId;
         this.eventType = eventType;
         this.actor = actor;
-        this.details = details == null ? null : Map.copyOf(details);
+        // Not Map.copyOf: details such as "old value" in an edit diff are legitimately null.
+        this.details = details == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(details));
         this.occurredAt = Instant.now();
     }
 

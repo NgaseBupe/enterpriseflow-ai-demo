@@ -122,6 +122,21 @@ class OrderExtractionRepositoryTest {
         assertThat(updated.getVersion()).isEqualTo(initialVersion + 1);
     }
 
+    @Test
+    void keepsNullValuesInTheAiSnapshot() {
+        // The AI is told to return null for anything it cannot find, so the snapshot must accept nulls.
+        Map<String, Object> rawResult = new java.util.HashMap<>();
+        rawResult.put("poNumber", "PO-2026-0412");
+        rawResult.put("customerEmail", null);
+
+        OrderExtraction saved = extractions.saveAndFlush(new OrderExtraction(
+                document.getId(), "mock", "mock-v1", new BigDecimal("0.80"), rawResult));
+        entityManager.clear();
+
+        OrderExtraction reloaded = extractions.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getAiRawResult()).containsEntry("customerEmail", null);
+    }
+
     private OrderExtraction newExtraction() {
         return new OrderExtraction(document.getId(), "mock", "mock-v1", new BigDecimal("0.93"),
                 Map.of("poNumber", "PO-2026-0412", "lines", List.of()));
