@@ -37,6 +37,21 @@ class DocumentRepositoryTest {
     }
 
     @Test
+    void anEntityEqualsALazyProxyOfItself() {
+        Document saved = documents.saveAndFlush(TestDocuments.pdf());
+        entityManager.clear();
+        Document proxy = entityManager.getReference(Document.class, saved.getId());
+        entityManager.clear();
+
+        Document loaded = documents.findById(saved.getId()).orElseThrow();
+
+        assertThat(proxy.getClass()).isNotEqualTo(Document.class);
+        // Only the entity's equals() is exercised: any other method called on a detached, uninitialised
+        // proxy makes Hibernate try to load it, which is inherent to proxies rather than to equals().
+        assertThat(loaded).isEqualTo(proxy);
+    }
+
+    @Test
     void rejectsAnEmptyFile() {
         Document empty = new Document("empty.pdf", "application/pdf", 0,
                 "b".repeat(64), UUID.randomUUID().toString(), DemoUser.ID);
