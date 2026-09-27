@@ -14,6 +14,10 @@ The topic reviews (`architecture-review.md`, `database-review.md`, `security-rev
 | [R-004](#r-004-audit-events-in-the-same-microsecond-had-no-defined-order) | Audit | Low | Audit events in the same microsecond had no defined order | Fixed |
 | [R-005](#r-005-ai-snapshot-numbers-lose-decimal-precision) | Extraction | Medium | AI snapshot numbers lose decimal precision | Open (Sprint 2) |
 | [R-006](#r-006-catch-all-error-handler-would-hide-authorisation-failures) | Security / API | Medium | Catch-all error handler would hide authorisation failures | Open (Sprint 3) |
+| [R-007](#r-007-file-names-could-hide-their-real-extension) | Security | Medium | File names could hide their real extension | Fixed |
+| [R-008](#r-008-two-different-responses-for-too-large-uploads) | API | Low | Two different responses for "too large" uploads | Fixed |
+| [R-009](#r-009-orphan-file-cleanup-was-untested) | Testing | Medium | Orphan-file cleanup was untested | Fixed |
+| [R-010](#r-010-uploads-are-held-in-memory-and-written-inside-the-database-transaction) | Performance | Low | Uploads are held in memory and written inside the database transaction | Accepted |
 
 ---
 
@@ -67,3 +71,40 @@ Reviewed after merge (PR #14). Fixes delivered on branch `fix/review-6-persisten
 - **Problem:** `ApiExceptionHandler` handles every `Exception` as a 500. When method-level security is added, Spring Security's `AccessDeniedException` and `AuthenticationException` would be caught here and turned into a 500 instead of a 403 or 401.
 - **Impact:** clients would see "internal error" instead of "forbidden", and security tests would fail in confusing ways.
 - **Planned fix (Sprint 3):** let security exceptions propagate to Spring Security's handlers (rethrow them or handle them explicitly), with tests for 401 and 403 responses.
+
+---
+
+## Story #7 — Upload a purchase order
+
+Reviewed before merge, after checking the endpoint by hand against a running instance.
+
+### R-007: File names could hide their real extension
+
+- **Found by:** code review, then confirmed with a failing test.
+- **Problem:** `FileNames.sanitize` removed control characters but not invisible Unicode formatting characters (category `Cf`). The right-to-left override `U+202E` makes `po\u202Efdp.exe` display as `poexe.pdf`.
+- **Impact:** a reviewer could be shown a misleading file name. This is a known technique for disguising executables. The file type itself was never at risk, because the type comes from the file's signature, not its name.
+- **Fix:** remove characters in both `\p{Cntrl}` and `\p{Cf}`.
+- **Validation:** new test `removesInvisibleFormattingCharactersUsedToDisguiseExtensions` failed before the fix and passes after.
+
+### R-008: Two different responses for "too large" uploads
+
+- **Found by:** manual testing against the running app.
+- **Problem:** files just over 10 MB were rejected by the application (`urn:enterpriseflow:problem:file-too-large`), but files over the 11 MB servlet limit were rejected by Spring with a generic `about:blank` problem.
+- **Impact:** clients would need to handle two shapes for the same error.
+- **Fix:** override Spring's `MaxUploadSizeExceededException` handling to return the same problem type and title.
+- **Validation:** new test `uploadRejectedByTheServletLimitUsesTheSameProblemTypeAsTheApplication`.
+
+### R-009: Orphan-file cleanup was untested
+
+- **Found by:** code review (test coverage).
+- **Problem:** the file is written before the database transaction commits, and a rollback hook deletes it if the commit fails. That hook had no test.
+- **Impact:** a regression would silently fill storage with files that no document points to.
+- **Fix:** new test `DocumentUploadRollbackTest` forces a foreign-key failure at commit time and checks that neither a document row nor a file remains. The hook already worked, so no production code changed.
+
+### R-010: Uploads are held in memory and written inside the database transaction
+
+- **Found by:** code review.
+- **Problem:** `MultipartFile.getBytes()` reads the whole file (up to 10 MB) into memory, and the file is written to disk while a database connection is held.
+- **Impact:** with many simultaneous large uploads, memory use and connection hold time grow. At this demo's scale, the effect is negligible.
+- **Decision:** accepted for the demo. The fix, if ever needed, is to stream the upload to a temporary file while computing the hash, then move it into place after the insert. To be covered in the performance review.
+
