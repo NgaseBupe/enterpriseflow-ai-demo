@@ -40,8 +40,21 @@ class ApiExceptionHandlerTest {
                 .andExpect(content().string(not(containsString("secret internal message"))));
     }
 
+    @Test
+    void uploadRejectedByTheServletLimitUsesTheSameProblemTypeAsTheApplication() throws Exception {
+        mockMvc.perform(get("/test/too-large"))
+                .andExpect(status().isPayloadTooLarge())
+                .andExpect(jsonPath("$.type").value("urn:enterpriseflow:problem:file-too-large"))
+                .andExpect(jsonPath("$.title").value("File too large"));
+    }
+
     @RestController
     static class FailingController {
+
+        @GetMapping("/test/too-large")
+        String tooLarge() {
+            throw new org.springframework.web.multipart.MaxUploadSizeExceededException(11L * 1024 * 1024);
+        }
 
         @GetMapping("/test/boom")
         String boom() {
