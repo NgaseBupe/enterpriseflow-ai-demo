@@ -33,15 +33,15 @@ class AuditEventRepositoryTest {
                 DemoUser.USERNAME, Map.of("fileName", "po-1001.pdf")));
         Thread.sleep(2);
         auditEvents.save(new AuditEvent(document.getId(), AuditEventType.EXTRACTION_REQUESTED,
-                DemoUser.USERNAME, null));
+                DemoUser.USERNAME, java.util.Collections.singletonMap("previousValue", null)));
         entityManager.flush();
         entityManager.clear();
 
-        List<AuditEvent> history = auditEvents.findByDocumentIdOrderByOccurredAtAsc(document.getId());
+        List<AuditEvent> history = auditEvents.findByDocumentIdOrderByOccurredAtAscIdAsc(document.getId());
 
         assertThat(history).extracting(AuditEvent::getEventType)
                 .containsExactly(AuditEventType.DOCUMENT_UPLOADED, AuditEventType.EXTRACTION_REQUESTED);
         assertThat(history.get(0).getDetails()).containsEntry("fileName", "po-1001.pdf");
-        assertThat(history.get(1).getDetails()).isNull();
+        assertThat(history.get(1).getDetails()).containsEntry("previousValue", null);
     }
 }

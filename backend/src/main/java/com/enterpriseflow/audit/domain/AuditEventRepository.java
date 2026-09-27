@@ -12,5 +12,6 @@ public interface AuditEventRepository extends Repository<AuditEvent, UUID> {
 
     AuditEvent save(AuditEvent event);
 
-    List<AuditEvent> findByDocumentIdOrderByOccurredAtAsc(UUID documentId);
+    /** Events in the order they happened; the time-ordered ID breaks ties within the same microsecond. */
+    List<AuditEvent> findByDocumentIdOrderByOccurredAtAscIdAsc(UUID documentId);
 }
