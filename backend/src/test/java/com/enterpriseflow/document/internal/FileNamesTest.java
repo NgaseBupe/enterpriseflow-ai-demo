@@ -23,6 +23,13 @@ class FileNamesTest {
     }
 
     @Test
+    void removesInvisibleFormattingCharactersUsedToDisguiseExtensions() {
+        // U+202E (right-to-left override) makes "po\u202Efdp.exe" display as "poexe.pdf".
+        assertThat(FileNames.sanitize("po\u202Efdp.exe")).isEqualTo("pofdp.exe");
+        assertThat(FileNames.sanitize("po\u200B.pdf")).isEqualTo("po.pdf");
+    }
+
+    @Test
     void fallsBackWhenNothingIsLeft() {
         assertThat(FileNames.sanitize(null)).isEqualTo(FileNames.FALLBACK);
         assertThat(FileNames.sanitize("   ")).isEqualTo(FileNames.FALLBACK);

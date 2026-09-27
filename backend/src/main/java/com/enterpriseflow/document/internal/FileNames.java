@@ -15,7 +15,9 @@ public final class FileNames {
         }
         // Some browsers send a full client path such as C:\Users\me\po.pdf; keep only the last segment.
         String name = original.substring(Math.max(original.lastIndexOf('/'), original.lastIndexOf('\\')) + 1);
-        name = name.replaceAll("\\p{Cntrl}", "").strip();
+        // Remove control characters and invisible formatting characters (Unicode category Cf), such as the
+        // right-to-left override that makes "po\u202Efdp.exe" display as "poexe.pdf".
+        name = name.replaceAll("[\\p{Cntrl}\\p{Cf}]", "").strip();
         if (name.isEmpty()) {
             return FALLBACK;
         }
