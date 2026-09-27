@@ -23,6 +23,18 @@ spring:
     problemdetails:
       enabled: true
 
+  servlet:
+    multipart:
+      # Slightly above the application limit, so oversized files are rejected by the application
+      # with a clear message; anything far larger is stopped here before being read into memory.
+      max-file-size: 11MB
+      max-request-size: 11MB
+
+app:
+  documents:
+    storage-location: ${DOCUMENT_STORAGE_DIR:data/documents}
+    max-file-size: 10MB
+
 server:
   port: ${SERVER_PORT:8080}
   shutdown: graceful
