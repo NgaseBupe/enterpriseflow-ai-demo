@@ -274,13 +274,13 @@ erDiagram
         varchar customer_name
         varchar customer_email
         varchar customer_phone
-        text delivery_address
+        varchar delivery_address "VARCHAR(500)"
         date requested_delivery_date
         char3 currency "ISO 4217"
         decimal subtotal "as stated on the document"
         decimal tax_amount
         decimal total_amount
-        text notes
+        varchar notes "VARCHAR(2000)"
         decimal ai_confidence "DECIMAL(3,2), 0..1"
         varchar ai_provider
         varchar ai_model
