@@ -1,0 +1,38 @@
+name: User story
+description: A small, vertical slice of functionality that delivers value to a user
+title: "[Story] "
+labels: ["user story"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: Story
+      description: Who wants what, and why.
+      placeholder: As a reviewer, I want to …, so that …
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable conditions that must all be true for the story to be accepted.
+      placeholder: |
+        - [ ] Given …, when …, then …
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Technical notes
+      description: Optional design notes, constraints or links to the design document.
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done
+      options:
+        - label: Acceptance criteria met
+        - label: Automated tests at the right level
+        - label: CI green
+        - label: No secrets; synthetic data only
+        - label: Documentation updated where behaviour changed
+        - label: Reviewed and merged through a pull request

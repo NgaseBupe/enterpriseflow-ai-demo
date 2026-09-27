@@ -110,7 +110,7 @@ I separated **`extraction` from `document`**. A document is a file; an extractio
 
 AI calls take seconds and sometimes tens of seconds, so holding an HTTP request open for that long is fragile.
 
-**[DECISION] Asynchronous processing with polling.**
+**[DECISION] Asynchronous processing with polling.** This is the target design, delivered in Sprint 5; the walking skeleton starts synchronous (§11, §13).
 
 - `POST /api/documents/{id}/process` sets the status to `PROCESSING` and returns **202 Accepted**.
 - Extraction runs on a bounded `@Async` executor with a fixed pool size and queue limit.
@@ -511,12 +511,12 @@ A status badge goes in the README.
 
 ## 11. The improvement case study
 
-The project includes a documented, **real** before-and-after improvement, with no invented numbers. The approach is to build the simplest reasonable version of a feature first, then measure it and document what was found and fixed.
+The project includes a documented, **real** before-and-after improvement, with no invented numbers. Delivering in sprints (§13) makes this natural: each feature starts as the simplest version that works, and is improved when a real problem is measured.
 
 Likely candidates, depending on what actually comes up:
 
-1. **N+1 queries when loading orders with their lines.** Turn on Hibernate SQL statistics, count the queries for the dashboard and review screens before and after a fetch-join or projection fix, and lock the result in with a query-count test.
-2. **Synchronous to asynchronous extraction.** Build it synchronously first, observe request-thread blocking and timeouts under slow AI responses (measured locally with a mock delay and a simple concurrent load test), then refactor to §2.4.
+1. **Synchronous to asynchronous extraction.** Sprint 1 runs extraction synchronously, which is fine with the instant mock provider. Sprint 5 connects the real AI model, whose responses take seconds. Measure request latency and thread blocking under a simple concurrent load test, then refactor to the async design in §2.4 and measure again.
+2. **N+1 queries when loading orders with their lines.** Turn on Hibernate SQL statistics, count the queries for the dashboard and review screens before and after a fetch-join or projection fix, and lock the result in with a query-count test.
 
 Whichever one is used, it's documented with the environment, method, raw results and the regression test that keeps it fixed.
 
@@ -540,20 +540,33 @@ Whichever one is used, it's documented with the environment, method, raw results
 
 ---
 
-## 13. Implementation plan
+## 13. Delivery plan
 
-Each step ends in a working, tested state and gets its own commit or commits:
+The project is delivered in **sprints of vertical slices**. The first sprint builds a *walking skeleton*: the thinnest version of the whole workflow that runs end to end. Each later sprint adds a set of user stories to that working system, so the app is demonstrable after every sprint.
 
-1. **Scaffolding:** repository layout, Maven and Vite projects, `.gitignore`, `.env.example`, CI workflow that builds both projects.
-2. **Persistence:** Flyway schema, entities, repositories, Testcontainers repository tests.
-3. **Security and identity:** users, session login, roles, demo-user initialiser, error handling (Problem Details).
-4. **Document upload:** validation, storage, list/get/content endpoints, audit events.
-5. **AI module:** interface, mock provider, validator with arithmetic checks, async extraction, state machine, failure and retry.
-6. **Review:** edit header and lines with optimistic locking, field provenance, confirm, audit diffs.
-7. **Frontend:** login, dashboard, upload, review with line-items grid, audit.
-8. **Gemini provider:** Google Gen AI SDK integration, with WireMock and contract tests, plus a live run with a free API key.
-9. **Docker Compose:** backend and nginx Dockerfiles, full-stack `docker compose up`.
-10. **Documentation:** review documents, improvement case study, README, screenshots, synthetic sample purchase orders.
+Work is tracked on GitHub: each user story is an issue with acceptance criteria, each sprint is a milestone, and each story is delivered through a pull request from `develop` into `main` that closes its issue.
+
+### Definition of Done
+
+A story is done when:
+
+- it meets its acceptance criteria;
+- it is covered by automated tests at the right level (unit, integration or API);
+- CI is green;
+- it contains no secrets and uses synthetic data only;
+- documentation is updated where behaviour changed;
+- it has been reviewed and merged through a pull request.
+
+### Sprints
+
+| Sprint | Goal | Scope |
+|---|---|---|
+| **1. Walking skeleton** | A reviewer can take a purchase order from upload to confirmation | Flyway schema; document upload with basic file checks; mock AI provider (synchronous); extraction stored with its lines; documents list; basic review screen showing the document next to editable data; confirm; audit events recorded; Problem Details errors; module boundary test. Runs without login: actions are attributed to a fixed demo user until Sprint 3. |
+| **2. Trust the data** | Reviewers can see what to check and fix it | Full validator with arithmetic checks; flags shown on screen; line-items grid (add, remove, edit); AI extracted / Edited badges; confirmation blocked while errors remain; optimistic locking |
+| **3. Secure it** | Only the right people can do the right things | Session login with CSRF; REVIEWER and ADMIN roles; demo users from environment variables; magic-byte upload validation; security headers |
+| **4. Accountability** | Every change can be traced | Field and line diffs in audit events; audit timeline screen; dashboard status filter and pagination |
+| **5. Real AI** | Real documents are read by a real model | Gemini provider; provider contract tests; asynchronous extraction with polling (see §11); retry and stuck-job protection |
+| **6. Ship it** | Anyone can run it and understand it | Docker Compose with nginx; synthetic sample documents; review documents; README; screenshots and demo video |
 
 ---
 
