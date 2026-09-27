@@ -1,0 +1,10 @@
+package com.enterpriseflow.audit;
+
+public enum AuditEventType {
+    DOCUMENT_UPLOADED,
+    EXTRACTION_REQUESTED,
+    EXTRACTION_SUCCEEDED,
+    EXTRACTION_FAILED,
+    EXTRACTION_EDITED,
+    EXTRACTION_CONFIRMED
+}
