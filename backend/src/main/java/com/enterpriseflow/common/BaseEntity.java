@@ -7,6 +7,7 @@ import jakarta.persistence.PostPersist;
 import jakarta.persistence.Transient;
 import java.util.Objects;
 import java.util.UUID;
+import org.hibernate.proxy.HibernateProxy;
 import org.springframework.data.domain.Persistable;
 
 /**
@@ -46,14 +47,23 @@ public abstract class BaseEntity implements Persistable<UUID> {
         if (this == other) {
             return true;
         }
-        if (other == null || getClass() != other.getClass()) {
+        // Hibernate may hand out a lazy proxy (a generated subclass) instead of the entity itself.
+        // Compare the real entity classes, and read the other ID through its getter; neither step
+        // loads an uninitialised proxy from the database.
+        if (other == null || entityClass(this) != entityClass(other)) {
             return false;
         }
-        return Objects.equals(id, ((BaseEntity) other).id);
+        return Objects.equals(getId(), ((BaseEntity) other).getId());
     }
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return entityClass(this).hashCode();
+    }
+
+    private static Class<?> entityClass(Object entity) {
+        return entity instanceof HibernateProxy proxy
+                ? proxy.getHibernateLazyInitializer().getPersistentClass()
+                : entity.getClass();
     }
 }

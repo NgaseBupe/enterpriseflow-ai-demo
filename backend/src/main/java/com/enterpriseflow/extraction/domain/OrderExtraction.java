@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -109,7 +110,8 @@ public class OrderExtraction extends BaseEntity {
         this.aiProvider = aiProvider;
         this.aiModel = aiModel;
         this.aiConfidence = aiConfidence;
-        this.aiRawResult = Map.copyOf(aiRawResult);
+        // Not Map.copyOf: the AI returns null for fields it cannot find, and Map.copyOf rejects nulls.
+        this.aiRawResult = Collections.unmodifiableMap(new LinkedHashMap<>(aiRawResult));
         this.extractedAt = Instant.now();
     }
 

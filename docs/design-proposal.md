@@ -165,6 +165,7 @@ enterpriseflow-ai-demo/
 ├── .github/workflows/ci.yml
 ├── docs/
 │   ├── design-proposal.md           # this document
+│   ├── review-log.md                # findings recorded as each story is reviewed
 │   ├── architecture-review.md
 │   ├── performance-review.md        # includes the improvement case study (§11)
 │   ├── database-review.md
@@ -555,7 +556,8 @@ A story is done when:
 - CI is green;
 - it contains no secrets and uses synthetic data only;
 - documentation is updated where behaviour changed;
-- it has been reviewed and merged through a pull request.
+- it has been code-reviewed, with every finding recorded in [`review-log.md`](review-log.md) (problem, root cause, impact, fix, validation);
+- it has been merged through a pull request.
 
 ### Sprints
 

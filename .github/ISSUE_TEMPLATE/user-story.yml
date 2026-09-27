@@ -35,4 +35,5 @@ body:
         - label: CI green
         - label: No secrets; synthetic data only
         - label: Documentation updated where behaviour changed
-        - label: Reviewed and merged through a pull request
+        - label: Code reviewed; findings recorded in docs/review-log.md
+        - label: Merged through a pull request
