@@ -13,5 +13,6 @@ Closes #
 ## Checklist
 
 - [ ] CI green
+- [ ] Code reviewed; findings recorded in `docs/review-log.md`
 - [ ] No secrets; synthetic data only
 - [ ] Documentation updated where behaviour changed
