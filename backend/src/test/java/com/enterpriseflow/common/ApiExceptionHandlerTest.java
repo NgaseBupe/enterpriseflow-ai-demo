@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@WebMvcTest
+@WebMvcTest(controllers = ApiExceptionHandlerTest.FailingController.class)
 @Import({ApiExceptionHandler.class, ApiExceptionHandlerTest.FailingController.class})
 class ApiExceptionHandlerTest {
 
