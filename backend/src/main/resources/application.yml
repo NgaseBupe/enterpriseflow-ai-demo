@@ -31,6 +31,9 @@ spring:
       max-request-size: 11MB
 
 app:
+  ai:
+    # mock: built-in stand-in, no API key needed (default). A real provider is added in Sprint 5.
+    provider: ${APP_AI_PROVIDER:mock}
   documents:
     storage-location: ${DOCUMENT_STORAGE_DIR:data/documents}
     max-file-size: 10MB
