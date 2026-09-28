@@ -81,9 +81,42 @@ public class DocumentService {
 
     @Transactional(readOnly = true)
     public DocumentView get(UUID id) {
-        return documents.findById(id)
-                .map(DocumentService::toView)
-                .orElseThrow(() -> new DocumentNotFoundException(id));
+        return toView(find(id));
+    }
+
+    /**
+     * Claims the document for extraction. Only one caller can win: the status check and the change
+     * happen in a single UPDATE.
+     *
+     * @throws IllegalDocumentStateException if the document is not waiting for (or retrying) extraction
+     */
+    @Transactional
+    public void startProcessing(UUID id) {
+        if (documents.claimForProcessing(id, DocumentStatus.EXTRACTABLE) == 0) {
+            Document document = find(id);
+            throw new IllegalDocumentStateException(document.getStatus(), "start extraction");
+        }
+    }
+
+    @Transactional
+    public void markExtracted(UUID id) {
+        find(id).markExtracted();
+    }
+
+    @Transactional
+    public void markExtractionFailed(UUID id, String reason) {
+        find(id).markExtractionFailed(reason);
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentContent loadContent(UUID id) {
+        Document document = find(id);
+        return new DocumentContent(storage.load(document.getStorageKey()), document.getContentType(),
+                document.getOriginalFileName());
+    }
+
+    private Document find(UUID id) {
+        return documents.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
     }
 
     /** The file is written before the transaction commits; if the commit fails, remove it again. */

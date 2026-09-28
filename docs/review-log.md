@@ -25,6 +25,10 @@ The topic reviews (`architecture-review.md`, `database-review.md`, `security-rev
 | [R-015](#r-015-valid-files-with-no-reported-type-were-rejected) | Frontend | Medium | Valid files with no reported type were rejected | Fixed |
 | [R-016](#r-016-the-api-client-could-not-handle-empty-responses) | Frontend | Low | The API client could not handle empty responses | Fixed |
 | [R-017](#r-017-the-upload-confirmation-reappears-after-a-refresh) | Frontend | Low | The upload confirmation reappears after a refresh | Accepted |
+| [R-018](#r-018-conflict-messages-used-raw-status-names) | API | Low | Conflict messages used raw status names | Fixed |
+| [R-019](#r-019-a-document-can-get-stuck-in-processing) | Reliability | Medium | A document can get stuck in Processing | Open (Sprint 5) |
+| [R-020](#r-020-a-failed-extraction-returns-200-ok) | API | Low | A failed extraction returns 200 OK | Accepted |
+| [R-021](#r-021-ai-output-is-not-yet-validated-before-it-is-saved) | Extraction | Medium | AI output is not yet validated before it is saved | Open (Sprint 2) |
 
 ---
 
@@ -191,4 +195,38 @@ This story also delivered the upload screen, which story #7 needed but did not i
 - **Found by:** code review.
 - **Problem:** the "…was uploaded" message is passed in the browser's history state, which survives a page refresh, so the message shows again.
 - **Decision:** accepted. It is harmless and accurate, and clearing history state would add code for little benefit.
+
+---
+
+## Story #9 — Extract order data with AI
+
+Reviewed before merge, after extracting documents through the running app (success, repeat request and simulated provider failure).
+
+Designed in from the start rather than found in review: the AI call runs **between** two short transactions, so a slow provider never holds a database connection. And starting extraction is a single conditional `UPDATE`, so when two requests race, exactly one wins (`onlyOneRequestCanClaimADocumentForExtraction`).
+
+### R-018: Conflict messages used raw status names
+
+- **Found by:** manual testing, then a failing test.
+- **Problem:** the 409 message was built from the enum name, producing text such as "Cannot complete extraction while the document is extraction failed."
+- **Fix:** every status has a human label ("Extraction failed", "In review", …). The message now reads: *Cannot complete extraction while the document's status is "Extraction failed".* The machine-readable `currentStatus` property is unchanged.
+- **Validation:** `explainsTheConflictInPlainLanguage` failed with the old wording and passes now. `everyStatusHasAReadableLabel` guards future statuses.
+
+### R-019: A document can get stuck in Processing
+
+- **Found by:** code review.
+- **Problem:** the document is marked Processing before the AI call. If the server stops during the call, or recording the failure itself fails, the document stays Processing. Retry is only allowed from Extraction failed, and the screen offers no action.
+- **Impact:** rare in a synchronous demo (the mock answers instantly), but real with a slow provider.
+- **Planned fix (Sprint 5):** the stuck-job sweeper from design §2.4 marks documents that have been Processing longer than a timeout as failed, so they can be retried.
+
+### R-020: A failed extraction returns 200 OK
+
+- **Found by:** code review.
+- **Observation:** `POST /process` returns 200 with status `EXTRACTION_FAILED` when the AI fails, rather than an error code.
+- **Decision:** accepted. The request itself succeeded: the attempt was made and recorded, and its outcome is part of the document's state, which the client displays. Errors that stop the attempt from starting (unknown document, wrong state) are still 404 and 409. The endpoint changes to `202 Accepted` when extraction becomes asynchronous in Sprint 5.
+
+### R-021: AI output is not yet validated before it is saved
+
+- **Found by:** code review.
+- **Problem:** the result is saved as returned. The database rejects some bad values (for example a zero quantity, tested in `dataTheDatabaseRejectsLeavesNoPartialExtraction`), but an extraction with **no line items** would be stored, and it would be rejected with a generic message rather than a specific one (see R-003).
+- **Planned fix (Sprint 2):** the validator from design §7.3 (structure, field rules and arithmetic checks) runs before anything is stored.
 
