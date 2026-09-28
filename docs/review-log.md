@@ -18,6 +18,7 @@ The topic reviews (`architecture-review.md`, `database-review.md`, `security-rev
 | [R-008](#r-008-two-different-responses-for-too-large-uploads) | API | Low | Two different responses for "too large" uploads | Fixed |
 | [R-009](#r-009-orphan-file-cleanup-was-untested) | Testing | Medium | Orphan-file cleanup was untested | Fixed |
 | [R-010](#r-010-uploads-are-held-in-memory-and-written-inside-the-database-transaction) | Performance | Low | Uploads are held in memory and written inside the database transaction | Accepted |
+| [R-011](#r-011-some-fixes-were-not-proven-by-the-tests-that-claimed-to-cover-them) | Testing | Medium | Some fixes were not proven by the tests that claimed to cover them | Fixed |
 
 ---
 
@@ -107,4 +108,32 @@ Reviewed before merge, after checking the endpoint by hand against a running ins
 - **Problem:** `MultipartFile.getBytes()` reads the whole file (up to 10 MB) into memory, and the file is written to disk while a database connection is held.
 - **Impact:** with many simultaneous large uploads, memory use and connection hold time grow. At this demo's scale, the effect is negligible.
 - **Decision:** accepted for the demo. The fix, if ever needed, is to stream the upload to a temporary file while computing the hash, then move it into place after the insert. To be covered in the performance review.
+
+---
+
+## Test coverage check of all findings
+
+After story #7, every finding was checked against its tests. Each fix was then temporarily reverted to confirm its test fails without it (a manual *mutation test*).
+
+### R-011: Some fixes were not proven by the tests that claimed to cover them
+
+- **Found by:** reviewing the review: mapping each finding to its tests, then reverting each fix.
+- **Problem:**
+  - R-001 was covered only by database-backed tests, although the bug sat in two constructors that need no database.
+  - R-002 had a test for the proxy case, but none for the basic equality rules.
+  - R-004's test waited 2 ms between events, so the timestamps never tied. It would have passed without the fix.
+- **Fix:**
+  - `OrderExtractionTest` and `AuditEventTest`: unit tests for null values and immutability.
+  - `BaseEntityTest`: unit tests for identity, equality, hash codes and "is new".
+  - `breaksTimestampTiesByTheTimeOrderedId`: writes two events with *identical* timestamps, inserting the later ID first.
+- **Validation (each fix reverted in turn):**
+
+  | Fix reverted | Result |
+  |---|---|
+  | R-001 (`Map.copyOf` put back) | Both new unit tests fail |
+  | R-002 (`getClass()` comparison put back) | The unit tests still pass, as expected, because they involve no proxies. `anEntityEqualsALazyProxyOfItself` fails. |
+  | R-004 (tie-break removed) | **The new test still passes.** MySQL returns tied rows in ID order anyway, because the `(document_id, occurred_at)` index stores the primary key last. |
+
+- **Conclusion on R-004:** the fix turns behaviour that depends on MySQL's choice of index into an explicit guarantee, but no test can currently demonstrate the failure. The test stays as a guard, with a comment explaining its limits.
+- **Lesson:** a passing test proves nothing until it has been seen to fail. Future fixes are checked by reverting them before the finding is marked fixed.
 
