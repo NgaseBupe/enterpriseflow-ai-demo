@@ -2,6 +2,7 @@ package com.enterpriseflow.document.domain;
 
 import com.enterpriseflow.common.BaseEntity;
 import com.enterpriseflow.document.DocumentStatus;
+import com.enterpriseflow.document.IllegalDocumentStateException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -60,6 +61,23 @@ public class Document extends BaseEntity {
         this.uploadedBy = uploadedBy;
         this.status = DocumentStatus.UPLOADED;
         this.uploadedAt = Instant.now();
+    }
+
+    public void markExtracted() {
+        transitionTo(DocumentStatus.EXTRACTED, "complete extraction");
+        this.failureReason = null;
+    }
+
+    public void markExtractionFailed(String reason) {
+        transitionTo(DocumentStatus.EXTRACTION_FAILED, "record an extraction failure");
+        this.failureReason = reason;
+    }
+
+    private void transitionTo(DocumentStatus target, String action) {
+        if (!status.canTransitionTo(target)) {
+            throw new IllegalDocumentStateException(status, action);
+        }
+        this.status = target;
     }
 
     public String getOriginalFileName() {
