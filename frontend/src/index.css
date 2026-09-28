@@ -5,10 +5,24 @@
   --color-text-muted: #5b6675;
   --color-border: #d9dee5;
   --color-accent: #1f5fae;
+  --color-accent-hover: #184c8c;
+
+  --color-neutral-bg: #eef0f3;
+  --color-neutral-text: #3d4654;
+  --color-info-bg: #e6effa;
+  --color-info-text: #174a87;
+  --color-warning-bg: #fdf3e1;
+  --color-warning-text: #7a4b00;
+  --color-success-bg: #e6f4ea;
+  --color-success-text: #1e6b34;
+  --color-danger-bg: #fbe9e9;
+  --color-danger-text: #9b1c1c;
 
   --space-2: 0.5rem;
+  --space-3: 0.75rem;
   --space-4: 1rem;
   --space-6: 1.5rem;
+  --radius: 6px;
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
@@ -26,8 +40,20 @@ body {
   margin: 0;
 }
 
-.app-shell {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: var(--space-6) var(--space-4);
+a {
+  color: var(--color-accent);
+}
+
+h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
