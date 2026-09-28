@@ -1,0 +1,65 @@
+.page {
+  max-width: 40rem;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dropZone {
+  display: block;
+  padding: var(--space-6);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  text-align: center;
+  cursor: pointer;
+}
+
+.dropZone:focus-within,
+.dropZone:hover {
+  border-color: var(--color-accent);
+}
+
+.dropZoneText {
+  display: block;
+}
+
+.fileInput {
+  margin-top: var(--space-3);
+}
+
+.error {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.primaryButton {
+  padding: var(--space-2) var(--space-6);
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

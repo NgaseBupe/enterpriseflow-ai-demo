@@ -1,0 +1,31 @@
+.badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral-text);
+}
+
+.badge[data-status='PROCESSING'],
+.badge[data-status='EXTRACTED'] {
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+.badge[data-status='IN_REVIEW'] {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.badge[data-status='CONFIRMED'] {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.badge[data-status='EXTRACTION_FAILED'] {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}

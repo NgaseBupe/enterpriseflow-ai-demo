@@ -19,6 +19,12 @@ The topic reviews (`architecture-review.md`, `database-review.md`, `security-rev
 | [R-009](#r-009-orphan-file-cleanup-was-untested) | Testing | Medium | Orphan-file cleanup was untested | Fixed |
 | [R-010](#r-010-uploads-are-held-in-memory-and-written-inside-the-database-transaction) | Performance | Low | Uploads are held in memory and written inside the database transaction | Accepted |
 | [R-011](#r-011-some-fixes-were-not-proven-by-the-tests-that-claimed-to-cover-them) | Testing | Medium | Some fixes were not proven by the tests that claimed to cover them | Fixed |
+| [R-012](#r-012-multipart-uploads-failed-in-frontend-tests-only) | Testing | Medium | Multipart uploads failed in frontend tests only | Fixed (workaround) |
+| [R-013](#r-013-the-page-number-was-lost-on-refresh-and-back) | Frontend | Medium | The page number was lost on refresh and Back | Fixed |
+| [R-014](#r-014-changing-page-flashed-a-loading-state) | Frontend | Low | Changing page flashed a loading state | Fixed |
+| [R-015](#r-015-valid-files-with-no-reported-type-were-rejected) | Frontend | Medium | Valid files with no reported type were rejected | Fixed |
+| [R-016](#r-016-the-api-client-could-not-handle-empty-responses) | Frontend | Low | The API client could not handle empty responses | Fixed |
+| [R-017](#r-017-the-upload-confirmation-reappears-after-a-refresh) | Frontend | Low | The upload confirmation reappears after a refresh | Accepted |
 
 ---
 
@@ -136,4 +142,53 @@ After story #7, every finding was checked against its tests. Each fix was then t
 
 - **Conclusion on R-004:** the fix turns behaviour that depends on MySQL's choice of index into an explicit guarantee, but no test can currently demonstrate the failure. The test stays as a guard, with a comment explaining its limits.
 - **Lesson:** a passing test proves nothing until it has been seen to fail. Future fixes are checked by reverting them before the finding is marked fixed.
+
+---
+
+## Story #8 — See my uploaded documents
+
+This story also delivered the upload screen, which story #7 needed but did not include. Reviewed before merge, after using the screens in a browser against the running backend.
+
+### R-012: Multipart uploads failed in frontend tests only
+
+- **Found by:** failing upload tests.
+- **Problem:** in tests, `fetch` threw `Cannot read properties of undefined (reading '_bytes')` for any upload. The same code works in a real browser.
+- **Root cause:** tests run in jsdom, whose `File` and `FormData` differ from the `fetch` Node provides. Vitest 5.0 bridges them by reading a hidden internal property of jsdom's `Blob`, and **jsdom 30 no longer exposes that property**. This was confirmed by inspecting a `Blob` in jsdom 29.1.1 (property present) and 30.1.1 (absent).
+- **Fix:** pin jsdom to `~29.1.1`, and add a Dependabot rule that blocks jsdom major upgrades, with a comment explaining why. A first attempt with a custom test environment was abandoned once the real cause was found.
+- **Residual limitation:** the same bridge sends uploaded files as plain `Blob`s, so **the file name is lost in tests**. The upload test therefore checks the request by content size. Browsers always send the name, and the backend tests cover name handling.
+- **Revisit:** when Vitest supports jsdom 30, remove the pin.
+
+### R-013: The page number was lost on refresh and Back
+
+- **Found by:** code review.
+- **Problem:** the current page was held in component state only. Refreshing, sharing the link or pressing Back returned the user to page 1, and `?page=99` showed a blank screen.
+- **Fix:** the page lives in the address (`?page=2`, counted from 1 for people). Invalid values fall back to the first page, and a page past the end shows a message with a link back.
+- **Validation:** three new tests. Two failed before the fix. The third ("invalid page number") passed before the fix only because the address was ignored entirely.
+
+### R-014: Changing page flashed a loading state
+
+- **Found by:** code review.
+- **Problem:** each page is a separate query, so moving to the next page briefly replaced the table with "Loading documents…".
+- **Fix:** keep the previous page on screen while the next loads (`placeholderData: keepPreviousData`), and disable the paging buttons meanwhile.
+- **Validation:** `keeps showing the current page while the next one loads` passes with the fix and fails when it is reverted.
+
+### R-015: Valid files with no reported type were rejected
+
+- **Found by:** code review.
+- **Problem:** the upload screen checked only `File.type`. Some systems report an empty type, so a genuine PDF would be refused before it reached the server.
+- **Fix:** when the type is empty, fall back to the file extension. The server still checks the real content by signature.
+- **Validation:** new test with an empty-type `po-1004.PDF` failed before the fix.
+
+### R-016: The API client could not handle empty responses
+
+- **Found by:** code review, looking ahead to logout in Sprint 3.
+- **Problem:** `request()` always parsed a JSON body, so a `204 No Content` response would throw.
+- **Fix:** return `undefined` for 204 responses.
+- **Validation:** new API client tests (success, 204, Problem Details, non-JSON error, network failure). The 204 test failed before the fix.
+
+### R-017: The upload confirmation reappears after a refresh
+
+- **Found by:** code review.
+- **Problem:** the "…was uploaded" message is passed in the browser's history state, which survives a page refresh, so the message shows again.
+- **Decision:** accepted. It is harmless and accurate, and clearing history state would add code for little benefit.
 

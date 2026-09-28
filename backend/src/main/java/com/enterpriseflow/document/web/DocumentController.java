@@ -1,7 +1,10 @@
 package com.enterpriseflow.document.web;
 
+import com.enterpriseflow.common.PageResponse;
 import com.enterpriseflow.document.DocumentService;
 import com.enterpriseflow.document.DocumentView;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
@@ -29,6 +32,12 @@ class DocumentController {
     ResponseEntity<DocumentView> upload(@RequestParam("file") MultipartFile file) throws IOException {
         DocumentView document = documentService.upload(file.getOriginalFilename(), file.getBytes());
         return ResponseEntity.created(URI.create("/api/documents/" + document.id())).body(document);
+    }
+
+    @GetMapping
+    PageResponse<DocumentView> list(@RequestParam(defaultValue = "0") @Min(0) int page,
+                                    @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        return documentService.list(page, size);
     }
 
     @GetMapping("/{id}")

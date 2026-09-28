@@ -2,6 +2,7 @@ package com.enterpriseflow.document;
 
 import com.enterpriseflow.audit.AuditEventType;
 import com.enterpriseflow.audit.AuditService;
+import com.enterpriseflow.common.PageResponse;
 import com.enterpriseflow.document.domain.Document;
 import com.enterpriseflow.document.domain.DocumentRepository;
 import com.enterpriseflow.document.internal.FileNames;
@@ -14,6 +15,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -66,6 +69,14 @@ public class DocumentService {
         storage.store(storageKey, content);
         deleteFileIfTransactionRollsBack(storageKey);
         return toView(document);
+    }
+
+    /** Newest first; the time-ordered ID breaks ties between documents uploaded in the same instant. */
+    private static final Sort NEWEST_FIRST = Sort.by(Sort.Order.desc("uploadedAt"), Sort.Order.desc("id"));
+
+    @Transactional(readOnly = true)
+    public PageResponse<DocumentView> list(int page, int size) {
+        return PageResponse.from(documents.findAll(PageRequest.of(page, size, NEWEST_FIRST)), DocumentService::toView);
     }
 
     @Transactional(readOnly = true)

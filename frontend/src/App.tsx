@@ -1,9 +1,20 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createBrowserRouter, RouterProvider } from 'react-router'
+import { routes } from './routes'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 10_000, refetchOnWindowFocus: false },
+  },
+})
+
+const router = createBrowserRouter(routes)
+
 function App() {
   return (
-    <main className="app-shell">
-      <h1>EnterpriseFlow AI</h1>
-      <p>Purchase order intake with AI-assisted extraction and human review.</p>
-    </main>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   )
 }
 
