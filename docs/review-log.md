@@ -29,6 +29,10 @@ The topic reviews (`architecture-review.md`, `database-review.md`, `security-rev
 | [R-019](#r-019-a-document-can-get-stuck-in-processing) | Reliability | Medium | A document can get stuck in Processing | Open (Sprint 5) |
 | [R-020](#r-020-a-failed-extraction-returns-200-ok) | API | Low | A failed extraction returns 200 OK | Accepted |
 | [R-021](#r-021-ai-output-is-not-yet-validated-before-it-is-saved) | Extraction | Medium | AI output is not yet validated before it is saved | Open (Sprint 2) |
+| [R-022](#r-022-the-download-header-used-email-style-encoding) | API | Low | The download header used email-style encoding | Fixed |
+| [R-023](#r-023-amounts-crowded-and-then-overflowed-the-line-items-table) | Frontend | Low | Amounts crowded, and then overflowed, the line-items table | Fixed |
+| [R-024](#r-024-pdf-rendering-cannot-be-checked-automatically) | Testing | Low | PDF rendering cannot be checked automatically | Checked by hand (Chrome) |
+| [R-025](#r-025-the-mock-ai-does-not-read-the-document) | Demo | Low | The mock AI does not read the document | Open (Sprint 6) |
 
 ---
 
@@ -229,4 +233,37 @@ Designed in from the start rather than found in review: the AI call runs **betwe
 - **Found by:** code review.
 - **Problem:** the result is saved as returned. The database rejects some bad values (for example a zero quantity, tested in `dataTheDatabaseRejectsLeavesNoPartialExtraction`), but an extraction with **no line items** would be stored, and it would be rejected with a generic message rather than a specific one (see R-003).
 - **Planned fix (Sprint 2):** the validator from design §7.3 (structure, field rules and arithmetic checks) runs before anything is stored.
+
+---
+
+## Story #10 — Review the extracted order next to the document
+
+Reviewed before merge using screenshots of the running app (headless Chrome) and a check by hand in a desktop browser.
+
+### R-022: The download header used email-style encoding
+
+- **Found by:** inspecting real response headers with `curl`, then failing tests.
+- **Problem:** Spring's `ContentDisposition` builder, given a charset, wrote `filename="=?UTF-8?Q?po-3101.pdf?="`: RFC 2047 email encoding, which RFC 6266 says not to use in HTTP. Browsers recover by using `filename*`, but the header was non-standard even for plain ASCII names.
+- **Fix:** build the header directly: an ASCII-only fallback in `filename` (non-ASCII, quotes and backslashes replaced) and the exact name, percent-encoded as UTF-8, in `filename*`.
+- **Validation:** `namesThePlainFileInTheStandardFormat` and `encodesUnusualFileNamesSafelyInTheHeader` failed before the fix and pass after.
+
+### R-023: Amounts crowded, and then overflowed, the line-items table
+
+- **Found by:** screenshots of the review screen.
+- **Problem:** repeating the currency in every cell ("ZMW 1,020.00") made amounts wrap onto two lines. The first fix (keep amounts on one line) made the table **wider than its panel**. The next screenshot caught that regression.
+- **Fix:** the currency is shown once, in the column headings ("Line total (ZMW)"); the product code moved under the description, removing a column; and the table scrolls sideways on very narrow screens instead of overflowing.
+- **Lesson:** layout changes need to be looked at, not only tested. The second screenshot caught what the unit tests could not.
+
+### R-024: PDF rendering cannot be checked automatically
+
+- **Found by:** trying to verify the strict content security policy (`default-src 'none'; frame-ancestors 'self'`) on the file endpoint.
+- **Observation:** headless Chrome shows an empty PDF viewer **even with no policy at all**, as a side-by-side comparison showed, so screenshots cannot prove whether the policy blocks rendering.
+- **Result:** checked by hand in desktop Chrome: the PDF renders with the policy in place.
+- **Follow-up (Sprint 6):** check Safari and Firefox before the final demo.
+
+### R-025: The mock AI does not read the document
+
+- **Found by:** comparing the screen with the original document (Kasonde Engineering) and the extracted data (Chanda Hardware).
+- **Explanation:** the mock returns a fixed order chosen from the file's bytes, not its text, which is expected for a stand-in. But in a demo, a mismatch with the visible document looks like a defect.
+- **Planned fix (Sprint 6):** ship synthetic sample purchase orders whose content matches what the mock returns for them, as design §7.2 intends.
 
