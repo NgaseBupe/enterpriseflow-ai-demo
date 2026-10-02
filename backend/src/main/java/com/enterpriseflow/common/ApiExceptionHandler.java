@@ -3,11 +3,14 @@ package com.enterpriseflow.common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -37,6 +40,22 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setType(URI.create("urn:enterpriseflow:problem:file-too-large"));
         problem.setTitle("File too large");
         return handleExceptionInternal(exception, problem, headers, HttpStatus.PAYLOAD_TOO_LARGE, request);
+    }
+
+    /** Lists every invalid field, so the client can show each message next to its input. */
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException exception, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Some fields are invalid. Correct them and try again.");
+        problem.setType(URI.create("urn:enterpriseflow:problem:validation"));
+        problem.setTitle("Invalid input");
+        List<Map<String, String>> errors = exception.getBindingResult().getFieldErrors().stream()
+                .map(error -> Map.of("field", error.getField(),
+                        "message", error.getDefaultMessage() == null ? "is invalid" : error.getDefaultMessage()))
+                .toList();
+        problem.setProperty("errors", errors);
+        return handleExceptionInternal(exception, problem, headers, HttpStatus.BAD_REQUEST, request);
     }
 
     @ExceptionHandler(Exception.class)
