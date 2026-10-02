@@ -14,7 +14,9 @@ import com.enterpriseflow.document.DocumentView;
 import com.enterpriseflow.extraction.domain.OrderExtraction;
 import com.enterpriseflow.extraction.domain.OrderExtractionLine;
 import com.enterpriseflow.extraction.domain.OrderExtractionRepository;
+import com.enterpriseflow.identity.CurrentUser;
 import com.enterpriseflow.identity.CurrentUserProvider;
+import com.enterpriseflow.identity.UserDirectory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -58,10 +60,12 @@ public class ExtractionService {
     private final CurrentUserProvider currentUserProvider;
     private final TransactionTemplate transaction;
     private final ObjectMapper objectMapper;
+    private final UserDirectory userDirectory;
 
     ExtractionService(DocumentService documents, AiDocumentExtractionService ai, OrderExtractionRepository extractions,
                       AuditService audit, CurrentUserProvider currentUserProvider,
-                      PlatformTransactionManager transactionManager, ObjectMapper objectMapper) {
+                      PlatformTransactionManager transactionManager, ObjectMapper objectMapper,
+                      UserDirectory userDirectory) {
         this.documents = documents;
         this.ai = ai;
         this.extractions = extractions;
@@ -69,6 +73,7 @@ public class ExtractionService {
         this.currentUserProvider = currentUserProvider;
         this.transaction = new TransactionTemplate(transactionManager);
         this.objectMapper = objectMapper;
+        this.userDirectory = userDirectory;
     }
 
     /**
@@ -101,7 +106,7 @@ public class ExtractionService {
     @Transactional(readOnly = true)
     public OrderExtractionView getExtraction(UUID documentId) {
         return extractions.findByDocumentId(documentId)
-                .map(ExtractionService::toView)
+                .map(this::toView)
                 .orElseThrow(() -> {
                     documents.get(documentId); // 404 for an unknown document rather than a missing extraction
                     return new ExtractionNotFoundException(documentId);
@@ -177,6 +182,33 @@ public class ExtractionService {
         return toView(extraction);
     }
 
+    /**
+     * Records that a person checked the extracted data against the document and found it correct. The
+     * extraction becomes read-only. This confirms the data only; it never accepts or rejects the order.
+     *
+     * @throws IllegalDocumentStateException unless the document is extracted or in review
+     * @throws ExtractionConflictException   if the extraction changed after the reviewer loaded it
+     */
+    @Transactional
+    public OrderExtractionView confirm(UUID documentId, ConfirmExtractionRequest request) {
+        documents.markConfirmed(documentId);
+        OrderExtraction extraction = extractions.findByDocumentId(documentId)
+                .orElseThrow(() -> new ExtractionNotFoundException(documentId));
+        if (extraction.getVersion() != request.version()) {
+            throw ExtractionConflictException.staleVersion();
+        }
+        CurrentUser reviewer = currentUserProvider.currentUser();
+        extraction.markReviewed(reviewer.id());
+        try {
+            extractions.saveAndFlush(extraction);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw ExtractionConflictException.staleVersion();
+        }
+        audit.record(documentId, AuditEventType.EXTRACTION_CONFIRMED, reviewer.username(),
+                Map.of("confirmedVersion", request.version()));
+        return toView(extraction);
+    }
+
     private static <T> void apply(List<String> changes, String field, T current, T requested, Consumer<T> setter) {
         T normalised = requested instanceof String text && text.isBlank() ? null : requested;
         if (!Objects.equals(current, normalised)) {
@@ -236,7 +268,7 @@ public class ExtractionService {
         });
     }
 
-    private static OrderExtractionView toView(OrderExtraction e) {
+    private OrderExtractionView toView(OrderExtraction e) {
         List<OrderExtractionView.Line> lines = e.getLines().stream()
                 .map(l -> new OrderExtractionView.Line(l.getLineNumber(), l.getProductCode(), l.getDescription(),
                         l.getQuantity(), l.getUnitOfMeasure(), l.getUnitPrice(), l.getLineTotal()))
@@ -245,6 +277,7 @@ public class ExtractionService {
                 e.getCustomerName(), e.getCustomerEmail(), e.getCustomerPhone(), e.getDeliveryAddress(),
                 e.getRequestedDeliveryDate(), e.getCurrency(), e.getSubtotal(), e.getTaxAmount(), e.getTotalAmount(),
                 e.getNotes(), lines, e.getAiProvider(), e.getAiModel(), e.getAiConfidence(), e.getExtractedAt(),
-                e.getReviewedBy(), e.getReviewedAt(), e.getVersion());
+                e.getReviewedBy(), e.getReviewedBy() == null ? null : userDirectory.displayName(e.getReviewedBy()),
+                e.getReviewedAt(), e.getVersion());
     }
 }

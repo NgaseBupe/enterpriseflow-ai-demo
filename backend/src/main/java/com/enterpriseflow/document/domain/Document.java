@@ -72,6 +72,10 @@ public class Document extends BaseEntity {
         transitionTo(DocumentStatus.IN_REVIEW, "edit the extracted data");
     }
 
+    public void markConfirmed() {
+        transitionTo(DocumentStatus.CONFIRMED, "confirm the extracted data");
+    }
+
     public void markExtractionFailed(String reason) {
         transitionTo(DocumentStatus.EXTRACTION_FAILED, "record an extraction failure");
         this.failureReason = reason;

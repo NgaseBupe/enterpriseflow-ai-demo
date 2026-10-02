@@ -1,6 +1,7 @@
 package com.enterpriseflow.extraction.web;
 
 import com.enterpriseflow.document.DocumentView;
+import com.enterpriseflow.extraction.ConfirmExtractionRequest;
 import com.enterpriseflow.extraction.ExtractionService;
 import com.enterpriseflow.extraction.OrderExtractionView;
 import com.enterpriseflow.extraction.UpdateExtractionRequest;
@@ -36,6 +37,12 @@ class ExtractionController {
     @GetMapping("/extraction")
     OrderExtractionView extraction(@PathVariable UUID documentId) {
         return extractionService.getExtraction(documentId);
+    }
+
+    /** Confirms that the extracted data matches the document. It does not accept or reject the order. */
+    @PostMapping("/review/confirm")
+    OrderExtractionView confirm(@PathVariable UUID documentId, @Valid @RequestBody ConfirmExtractionRequest request) {
+        return extractionService.confirm(documentId, request);
     }
 
     @PutMapping("/extraction")

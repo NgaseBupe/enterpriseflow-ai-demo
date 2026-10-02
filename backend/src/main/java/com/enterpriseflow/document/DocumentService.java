@@ -109,6 +109,12 @@ public class DocumentService {
         find(id).markInReview();
     }
 
+    /** @throws IllegalDocumentStateException unless the document is extracted or in review */
+    @Transactional
+    public void markConfirmed(UUID id) {
+        find(id).markConfirmed();
+    }
+
     @Transactional
     public void markExtractionFailed(UUID id, String reason) {
         find(id).markExtractionFailed(reason);
