@@ -357,7 +357,7 @@ All endpoints except `/api/auth/login` and health checks require authentication.
 | POST | `/api/documents/{id}/process` | REVIEWER | **202** | 404, 409 wrong state |
 | GET | `/api/documents/{id}/extraction` | any | 200 | 404 (none yet) |
 | PUT | `/api/documents/{id}/extraction` | REVIEWER | 200 | 400 validation, 409 stale version or confirmed |
-| POST | `/api/documents/{id}/review/confirm` | REVIEWER | 200 | 409 already confirmed, not extracted, or arithmetic errors remain |
+| POST | `/api/documents/{id}/review/confirm` (body: `{ "version" }`) | REVIEWER | 200 | 409 already confirmed, not extracted, changed since the reviewer loaded it, or arithmetic errors remain |
 | GET | `/api/documents/{id}/audit` | any | 200 | 404 |
 
 - `PUT /extraction` replaces the header and the full list of lines in one request, together with the `version` being edited. One request per save keeps the edit atomic and gives the audit trail a single, complete diff.
