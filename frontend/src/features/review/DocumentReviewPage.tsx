@@ -5,12 +5,20 @@ import { useDocument } from '../../api/documents'
 import { useExtractDocument, useExtraction } from '../../api/extraction'
 import { StatusBadge } from '../../components/StatusBadge'
 import { formatDateTime, formatFileSize } from '../../lib/format'
-import styles from './DocumentDetailsPage.module.css'
+import { DocumentViewer } from './DocumentViewer'
+import styles from './DocumentReviewPage.module.css'
 import { ExtractedOrder } from './ExtractedOrder'
 
 const HAS_EXTRACTION: DocumentStatus[] = ['EXTRACTED', 'IN_REVIEW', 'CONFIRMED']
 
-export function DocumentDetailsPage() {
+const TYPE_LABELS: Record<string, string> = {
+  'application/pdf': 'PDF',
+  'image/png': 'PNG image',
+  'image/jpeg': 'JPEG image',
+}
+
+/** The original document on one side, the extracted data on the other. */
+export function DocumentReviewPage() {
   const { id = '' } = useParams()
   const { data, isPending, isError, error } = useDocument(id)
   const hasExtraction = !!data && HAS_EXTRACTION.includes(data.status)
@@ -31,56 +39,62 @@ export function DocumentDetailsPage() {
 
       {data && (
         <>
-          <h1 className={styles.title}>{data.originalFileName}</h1>
-          <dl className={styles.details}>
-            <dt>Status</dt>
-            <dd>
-              <StatusBadge status={data.status} />
-            </dd>
-            <dt>Uploaded</dt>
-            <dd>{formatDateTime(data.uploadedAt)}</dd>
-            <dt>Type</dt>
-            <dd>{data.contentType}</dd>
-            <dt>Size</dt>
-            <dd>{formatFileSize(data.fileSize)}</dd>
-          </dl>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>{data.originalFileName}</h1>
+            <StatusBadge status={data.status} />
+          </div>
+          <p className={styles.meta}>
+            Uploaded {formatDateTime(data.uploadedAt)} · {TYPE_LABELS[data.contentType] ?? data.contentType} ·{' '}
+            {formatFileSize(data.fileSize)}
+          </p>
 
-          {data.status === 'EXTRACTION_FAILED' && (
-            <p className={styles.error} role="alert">
-              Extraction failed: {data.failureReason ?? 'unknown reason.'}
-            </p>
-          )}
+          <div className={styles.layout}>
+            <section aria-label="Original document" className={styles.documentPane}>
+              <DocumentViewer document={data} />
+            </section>
 
-          {extract.isError && (
-            <p className={styles.error} role="alert">
-              {errorMessage(extract.error)}
-            </p>
-          )}
+            <section aria-label="Extracted data" className={styles.dataPane}>
+              {data.status === 'EXTRACTION_FAILED' && (
+                <p className={styles.error} role="alert">
+                  Extraction failed: {data.failureReason ?? 'unknown reason.'}
+                </p>
+              )}
 
-          {(data.status === 'UPLOADED' || data.status === 'EXTRACTION_FAILED') && (
-            <button
-              type="button"
-              className={styles.primaryButton}
-              onClick={() => extract.mutate()}
-              disabled={extract.isPending}
-            >
-              {extract.isPending
-                ? 'Extracting…'
-                : data.status === 'EXTRACTION_FAILED'
-                  ? 'Retry extraction'
-                  : 'Extract data'}
-            </button>
-          )}
+              {extract.isError && (
+                <p className={styles.error} role="alert">
+                  {errorMessage(extract.error)}
+                </p>
+              )}
 
-          {data.status === 'PROCESSING' && <p role="status">Extraction in progress…</p>}
+              {(data.status === 'UPLOADED' || data.status === 'EXTRACTION_FAILED') && (
+                <div className={styles.callToAction}>
+                  {data.status === 'UPLOADED' && <p>This document has not been extracted yet.</p>}
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => extract.mutate()}
+                    disabled={extract.isPending}
+                  >
+                    {extract.isPending
+                      ? 'Extracting…'
+                      : data.status === 'EXTRACTION_FAILED'
+                        ? 'Retry extraction'
+                        : 'Extract data'}
+                  </button>
+                </div>
+              )}
 
-          {hasExtraction && extraction.isPending && <p role="status">Loading extracted data…</p>}
-          {hasExtraction && extraction.isError && (
-            <p className={styles.error} role="alert">
-              {errorMessage(extraction.error)}
-            </p>
-          )}
-          {extraction.data && <ExtractedOrder extraction={extraction.data} />}
+              {data.status === 'PROCESSING' && <p role="status">Extraction in progress…</p>}
+
+              {hasExtraction && extraction.isPending && <p role="status">Loading extracted data…</p>}
+              {hasExtraction && extraction.isError && (
+                <p className={styles.error} role="alert">
+                  {errorMessage(extraction.error)}
+                </p>
+              )}
+              {extraction.data && <ExtractedOrder extraction={extraction.data} />}
+            </section>
+          </div>
         </>
       )}
     </section>

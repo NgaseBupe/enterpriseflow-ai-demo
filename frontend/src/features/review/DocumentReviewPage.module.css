@@ -1,23 +1,58 @@
-.title {
+.titleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   margin-top: var(--space-4);
 }
 
-.details {
+.title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: var(--space-2) 0 var(--space-6);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Side by side on wide screens; the document stays in view while the data scrolls. */
+.layout {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--space-2) var(--space-6);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+}
+
+@media (min-width: 64rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .documentPane {
+    position: sticky;
+    top: var(--space-4);
+    height: calc(100vh - 2 * var(--space-4));
+  }
+}
+
+.documentPane,
+.dataPane {
+  min-width: 0;
+}
+
+.callToAction {
+  padding: var(--space-6);
+  border: 1px dashed var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
+  text-align: center;
 }
 
-.details dt {
+.callToAction p {
+  margin-top: 0;
   color: var(--color-text-muted);
-}
-
-.details dd {
-  margin: 0;
 }
 
 .error {
@@ -28,7 +63,6 @@
 }
 
 .primaryButton {
-  margin-top: var(--space-4);
   padding: var(--space-2) var(--space-6);
   border: none;
   border-radius: var(--radius);

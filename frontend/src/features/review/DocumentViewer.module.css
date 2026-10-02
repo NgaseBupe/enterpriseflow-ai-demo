@@ -1,0 +1,25 @@
+.viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+}
+
+.frame,
+.image {
+  width: 100%;
+  min-height: 32rem;
+  flex: 1;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.image {
+  object-fit: contain;
+}
+
+.openLink {
+  align-self: flex-end;
+  font-size: 0.875rem;
+}
