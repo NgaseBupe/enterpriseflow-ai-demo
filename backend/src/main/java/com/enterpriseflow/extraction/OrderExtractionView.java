@@ -28,6 +28,7 @@ public record OrderExtractionView(
         BigDecimal aiConfidence,
         Instant extractedAt,
         UUID reviewedBy,
+        String reviewedByName,
         Instant reviewedAt,
         long version) {
 

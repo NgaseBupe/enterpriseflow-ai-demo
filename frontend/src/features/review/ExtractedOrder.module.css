@@ -28,6 +28,34 @@
   cursor: pointer;
 }
 
+.actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.confirmButton {
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.confirmButton:hover {
+  background: var(--color-accent-hover);
+}
+
+.confirmedBanner {
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--color-success-text);
+  border-radius: var(--radius);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-weight: 500;
+}
+
 .editButton:hover {
   background: var(--color-info-bg);
 }

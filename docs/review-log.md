@@ -34,11 +34,13 @@ The topic reviews (`architecture-review.md`, `database-review.md`, `security-rev
 | [R-024](#r-024-pdf-rendering-cannot-be-checked-automatically) | Testing | Low | PDF rendering cannot be checked automatically | Checked by hand (Chrome) |
 | [R-025](#r-025-the-mock-ai-does-not-read-the-document) | Demo | Low | The mock AI does not read the document | Open (Sprint 6) |
 | [R-026](#r-026-negative-numbers-got-a-confusing-message) | Frontend | Low | Negative numbers got a confusing message | Fixed |
-| [R-027](#r-027-a-confirmed-extraction-could-be-saved-without-changes) | Extraction | Medium | A confirmed extraction could be "saved" without changes | Fixed (test with #12) |
+| [R-027](#r-027-a-confirmed-extraction-could-be-saved-without-changes) | Extraction | Medium | A confirmed extraction could be "saved" without changes | Fixed |
 | [R-028](#r-028-a-late-version-clash-would-return-500) | Extraction | Medium | A late version clash would return 500 | Fixed (no automated test) |
 | [R-029](#r-029-edit-audit-events-record-field-names-only) | Audit | Low | Edit audit events record field names only | Open (Sprint 4) |
 | [R-030](#r-030-validation-rules-exist-on-both-client-and-server) | Maintainability | Low | Validation rules exist on both client and server | Accepted |
 | [R-031](#r-031-a-lint-warning-passed-local-checks-and-failed-ci) | Process | Medium | A lint warning passed local checks and failed CI | Fixed |
+| [R-032](#r-032-confirmation-could-approve-data-the-reviewer-never-saw) | Extraction | Medium | Confirmation could approve data the reviewer never saw | Fixed (by design) |
+| [R-033](#r-033-the-confirmation-dialog-does-not-make-the-page-behind-it-inert) | Accessibility | Low | The confirmation dialog does not make the page behind it inert | Open (Sprint 6) |
 
 ---
 
@@ -291,7 +293,7 @@ Reviewed before merge. The API was also exercised against the running app: a val
 - **Found by:** code review of the first version of `updateExtraction`.
 - **Problem:** the status check happened only when something had changed, so sending unchanged data for a confirmed extraction returned 200 instead of refusing the edit.
 - **Fix:** the status (Extracted or In review) is checked before anything else.
-- **Validation:** `refusesEditsBeforeExtraction` covers the Uploaded case. The Confirmed case needs the confirm action, so its test is added with story #12.
+- **Validation:** `refusesEditsBeforeExtraction` covers the Uploaded case. The Confirmed case was added with story #12: `aConfirmedExtractionCannotBeEditedEvenWithoutChanges` returns 200 when the fix is reverted and 409 with it.
 
 ### R-028: A late version clash would return 500
 
@@ -323,4 +325,24 @@ Reviewed before merge. The API was also exercised against the running app: a val
 - **Fix (code):** the URL helper moved to the documents API module (`documentContentUrl`), where API addresses belong. Fixed on the story #10 branch and merged into #11.
 - **Fix (process):** checks now pass or fail **on the command's exit code** (`npm run lint && npm run typecheck && …`), never on searching its output.
 - **Lesson:** CI is the safety net that exposed this. A check that inspects text can be wrong about success; the exit code cannot.
+
+---
+
+## Story #12 — Confirm the extracted order
+
+Reviewed before merge. The whole Sprint 1 workflow was run against the live app: upload → extract → correct → confirm → edit again (409) → extract again (409).
+
+### R-032: Confirmation could approve data the reviewer never saw
+
+- **Found by:** design review before coding. The design's `POST /review/confirm` had no request body.
+- **Problem:** if a colleague saved a correction after the reviewer opened the screen, the reviewer's Confirm would approve data they had never seen.
+- **Fix:** the confirmation carries the version the reviewer was looking at (`{ "version": 3 }`). A mismatch is refused with the same 409 "Changed by someone else" as a stale edit, and nothing changes. The design document is updated.
+- **Validation:** `refusesToConfirmDataThatChangedAfterTheReviewerLookedAtIt`: the document stays In review.
+
+### R-033: The confirmation dialog does not make the page behind it inert
+
+- **Found by:** code review of `ConfirmDialog`.
+- **Current behaviour:** the dialog is announced as modal (`aria-modal`), focus moves to the safe choice (Cancel), Escape cancels, and Tab is kept inside the dialog. Tests cover each of these. However, the page behind it is not marked `inert`, and it can still scroll.
+- **Impact:** low. Most screen readers respect `aria-modal`, but some older combinations can still reach the content behind.
+- **Planned (Sprint 6):** an accessibility pass, including `inert` on the background, or a switch to the native `<dialog>` element once the test environment supports it (jsdom does not implement `showModal`).
 

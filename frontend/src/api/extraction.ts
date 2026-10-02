@@ -33,6 +33,7 @@ export interface OrderExtraction {
   aiConfidence: number | null
   extractedAt: string
   reviewedBy: string | null
+  reviewedByName: string | null
   reviewedAt: string | null
   version: number
 }
@@ -75,6 +76,23 @@ export function useUpdateExtraction(documentId: string) {
     onSuccess: (extraction) => {
       queryClient.setQueryData(['documents', 'detail', documentId, 'extraction'], extraction)
       // The document's status may have changed to In review.
+      return queryClient.invalidateQueries({ queryKey: ['documents'], refetchType: 'active' })
+    },
+  })
+}
+
+/** Confirms that the extracted data matches the document. It never accepts or rejects the order. */
+export function useConfirmExtraction(documentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (version: number) =>
+      request<OrderExtraction>(`/api/documents/${encodeURIComponent(documentId)}/review/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version }),
+      }),
+    onSuccess: (extraction) => {
+      queryClient.setQueryData(['documents', 'detail', documentId, 'extraction'], extraction)
       return queryClient.invalidateQueries({ queryKey: ['documents'], refetchType: 'active' })
     },
   })

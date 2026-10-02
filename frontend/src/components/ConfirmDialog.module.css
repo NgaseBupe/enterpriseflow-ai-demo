@@ -1,0 +1,68 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgb(28 36 48 / 45%);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 30rem;
+  padding: var(--space-6);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 20%);
+}
+
+.title {
+  margin-top: 0;
+  font-size: 1.25rem;
+}
+
+.body {
+  color: var(--color-text);
+}
+
+.error {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.primaryButton,
+.secondaryButton {
+  padding: var(--space-2) var(--space-6);
+  border-radius: var(--radius);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.secondaryButton {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}

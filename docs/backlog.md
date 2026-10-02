@@ -41,9 +41,10 @@ Each user story is also a GitHub issue; the issue number is shown where one exis
   - [x] `PUT /api/documents/{id}/extraction` for header and existing lines, with version check and per-field errors
   - [x] Editable form; status becomes In review; `EXTRACTION_EDITED` audit event
   - [x] Review fixes: R-026, R-027, R-028
-- [ ] #12 Confirm the extracted order
-  - [ ] `POST /api/documents/{id}/review/confirm`, with a confirmation dialog; extraction read-only afterwards
-  - [ ] `EXTRACTION_CONFIRMED` audit event
+- [x] #12 Confirm the extracted order
+  - [x] `POST /api/documents/{id}/review/confirm` with the version the reviewer saw (R-032); confirmation dialog; read-only afterwards
+  - [x] "Confirmed by … on …" shown; `EXTRACTION_CONFIRMED` audit event
+  - [x] Test for R-027 (no edits once confirmed)
 - [ ] **Sprint close**
   - [ ] Merge `develop` into `main` (closes the sprint's issues)
   - [ ] README: what it is, how to run it, first screenshots
@@ -103,6 +104,7 @@ Each user story is also a GitHub issue; the issue number is shown where one exis
 - [ ] Dockerfiles for backend and frontend (nginx); `docker compose up` runs everything
 - [ ] Synthetic sample purchase orders (PDF and photo) whose content matches the mock's output (R-025)
 - [ ] Check the review screen in Safari and Firefox (R-024)
+- [ ] Accessibility pass: inert background behind dialogs, keyboard walkthrough (R-033)
 - [ ] OpenAPI / Swagger UI
 - [ ] Structured JSON logging with correlation IDs
 - [ ] Test coverage report (JaCoCo)

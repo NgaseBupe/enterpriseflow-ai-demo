@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router'
 import { errorMessage } from '../../api/client'
 import type { DocumentStatus } from '../../api/documents'
 import { useDocument } from '../../api/documents'
-import { useExtractDocument, useExtraction } from '../../api/extraction'
+import { useConfirmExtraction, useExtractDocument, useExtraction } from '../../api/extraction'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { StatusBadge } from '../../components/StatusBadge'
 import { formatDateTime, formatFileSize } from '../../lib/format'
 import { DocumentViewer } from './DocumentViewer'
@@ -29,6 +30,9 @@ export function DocumentReviewPage() {
   const extract = useExtractDocument(id)
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [confirmedNow, setConfirmedNow] = useState(false)
+  const confirm = useConfirmExtraction(id)
   const canEdit = !!data && EDITABLE.includes(data.status)
 
   return (
@@ -98,7 +102,12 @@ export function DocumentReviewPage() {
                   {errorMessage(extraction.error)}
                 </p>
               )}
-              {saved && !editing && (
+              {confirmedNow && (
+                <p className={styles.success} role="status">
+                  Extraction confirmed.
+                </p>
+              )}
+              {saved && !editing && !confirmedNow && (
                 <p className={styles.success} role="status">
                   Changes saved.
                 </p>
@@ -124,7 +133,36 @@ export function DocumentReviewPage() {
                         }
                       : undefined
                   }
+                  onConfirm={
+                    canEdit
+                      ? () => {
+                          confirm.reset()
+                          setConfirming(true)
+                        }
+                      : undefined
+                  }
                 />
+              )}
+              {confirming && extraction.data && (
+                <ConfirmDialog
+                  title="Confirm the extracted data?"
+                  confirmLabel="Confirm"
+                  busy={confirm.isPending}
+                  error={confirm.isError ? errorMessage(confirm.error) : null}
+                  onCancel={() => setConfirming(false)}
+                  onConfirm={() =>
+                    confirm.mutate(extraction.data.version, {
+                      onSuccess: () => {
+                        setConfirming(false)
+                        setSaved(false)
+                        setConfirmedNow(true)
+                      },
+                    })
+                  }
+                >
+                  <p>You are confirming that the extracted data matches the document.</p>
+                  <p>After confirming, it can no longer be edited. This does not accept or reject the order.</p>
+                </ConfirmDialog>
               )}
             </section>
           </div>
