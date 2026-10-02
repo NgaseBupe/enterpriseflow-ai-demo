@@ -36,6 +36,11 @@ const keys = {
   detail: (id: string) => ['documents', 'detail', id] as const,
 }
 
+/** Where the original file is served, for display next to the extracted data. */
+export function documentContentUrl(id: string) {
+  return `/api/documents/${encodeURIComponent(id)}/content`
+}
+
 export function useDocuments(page: number) {
   return useQuery({
     queryKey: keys.list(page),
