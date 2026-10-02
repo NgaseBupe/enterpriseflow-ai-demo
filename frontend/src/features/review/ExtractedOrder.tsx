@@ -1,27 +1,48 @@
 import type { OrderExtraction } from '../../api/extraction'
-import { formatDate, formatMoney, formatNumber } from '../../lib/format'
+import { formatDate, formatDateTime, formatMoney, formatNumber } from '../../lib/format'
 import styles from './ExtractedOrder.module.css'
 
 function text(value: string | null) {
   return value ?? '—'
 }
 
-/** Read-only view of the extracted order, with an Edit action when corrections are allowed. */
-export function ExtractedOrder({ extraction, onEdit }: { extraction: OrderExtraction; onEdit?: () => void }) {
+interface Props {
+  extraction: OrderExtraction
+  onEdit?: () => void
+  onConfirm?: () => void
+}
+
+/** Read-only view of the extracted order, with Edit and Confirm actions while review is open. */
+export function ExtractedOrder({ extraction, onEdit, onConfirm }: Props) {
+  const confirmed = extraction.reviewedAt !== null
   // The currency is shown once, in the column headings, so amounts stay on one line.
   const inCurrency = extraction.currency ? ` (${extraction.currency})` : ''
   return (
     <section aria-labelledby="extracted-order-heading" className={styles.section}>
-      <p className={styles.banner} role="note">
-        AI-generated information — human review required.
-      </p>
+      {confirmed ? (
+        <p className={styles.confirmedBanner} role="note">
+          Confirmed by {extraction.reviewedByName ?? 'a reviewer'} on {formatDateTime(extraction.reviewedAt!)}. The
+          AI-extracted data was checked against the document; it can no longer be edited.
+        </p>
+      ) : (
+        <p className={styles.banner} role="note">
+          AI-generated information — human review required.
+        </p>
+      )}
       <div className={styles.headingRow}>
         <h2 id="extracted-order-heading">Extracted order</h2>
-        {onEdit && (
-          <button type="button" className={styles.editButton} onClick={onEdit}>
-            Edit
-          </button>
-        )}
+        <div className={styles.actions}>
+          {onEdit && (
+            <button type="button" className={styles.editButton} onClick={onEdit}>
+              Edit
+            </button>
+          )}
+          {onConfirm && (
+            <button type="button" className={styles.confirmButton} onClick={onConfirm}>
+              Confirm
+            </button>
+          )}
+        </div>
       </div>
       <p className={styles.source}>
         Extracted by {extraction.aiProvider} ({extraction.aiModel})

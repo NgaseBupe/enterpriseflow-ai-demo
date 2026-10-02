@@ -25,6 +25,7 @@ export function anExtraction(documentId: string, overrides: Partial<OrderExtract
     aiConfidence: 0.93,
     extractedAt: '2026-09-27T10:20:00Z',
     reviewedBy: null,
+    reviewedByName: null,
     reviewedAt: null,
     version: 0,
     ...overrides,
