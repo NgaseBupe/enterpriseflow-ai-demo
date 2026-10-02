@@ -8,6 +8,8 @@ import com.enterpriseflow.audit.AuditEventType;
 import com.enterpriseflow.audit.AuditService;
 import com.enterpriseflow.document.DocumentContent;
 import com.enterpriseflow.document.DocumentService;
+import com.enterpriseflow.document.DocumentStatus;
+import com.enterpriseflow.document.IllegalDocumentStateException;
 import com.enterpriseflow.document.DocumentView;
 import com.enterpriseflow.extraction.domain.OrderExtraction;
 import com.enterpriseflow.extraction.domain.OrderExtractionLine;
@@ -15,11 +17,18 @@ import com.enterpriseflow.extraction.domain.OrderExtractionRepository;
 import com.enterpriseflow.identity.CurrentUserProvider;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -97,6 +106,93 @@ public class ExtractionService {
                     documents.get(documentId); // 404 for an unknown document rather than a missing extraction
                     return new ExtractionNotFoundException(documentId);
                 });
+    }
+
+    /**
+     * Applies a reviewer's corrections. The document moves to In review, and the changed fields are
+     * recorded in the audit trail. Saving without any change is accepted and records nothing.
+     *
+     * @throws ExtractionConflictException if the extraction changed since the reviewer loaded it, or the
+     *                                     lines do not match the existing ones
+     */
+    @Transactional
+    public OrderExtractionView updateExtraction(UUID documentId, UpdateExtractionRequest request) {
+        DocumentStatus status = documents.get(documentId).status();
+        if (status != DocumentStatus.EXTRACTED && status != DocumentStatus.IN_REVIEW) {
+            throw new IllegalDocumentStateException(status, "edit the extracted data");
+        }
+        OrderExtraction extraction = extractions.findByDocumentId(documentId)
+                .orElseThrow(() -> new ExtractionNotFoundException(documentId));
+        if (extraction.getVersion() != request.version()) {
+            throw ExtractionConflictException.staleVersion();
+        }
+        Map<Integer, OrderExtractionLine> linesByNumber = extraction.getLines().stream()
+                .collect(Collectors.toMap(OrderExtractionLine::getLineNumber, Function.identity()));
+        Map<Integer, UpdateExtractionRequest.Line> requestedLines = request.lines().stream()
+                .collect(Collectors.toMap(UpdateExtractionRequest.Line::lineNumber, Function.identity(), (a, b) -> {
+                    throw ExtractionConflictException.linesDoNotMatch();
+                }));
+        if (!requestedLines.keySet().equals(linesByNumber.keySet())) {
+            throw ExtractionConflictException.linesDoNotMatch();
+        }
+
+        List<String> changes = new ArrayList<>();
+        apply(changes, "poNumber", extraction.getPoNumber(), request.poNumber(), extraction::setPoNumber);
+        apply(changes, "poDate", extraction.getPoDate(), request.poDate(), extraction::setPoDate);
+        apply(changes, "customerName", extraction.getCustomerName(), request.customerName(), extraction::setCustomerName);
+        apply(changes, "customerEmail", extraction.getCustomerEmail(), request.customerEmail(), extraction::setCustomerEmail);
+        apply(changes, "customerPhone", extraction.getCustomerPhone(), request.customerPhone(), extraction::setCustomerPhone);
+        apply(changes, "deliveryAddress", extraction.getDeliveryAddress(), request.deliveryAddress(),
+                extraction::setDeliveryAddress);
+        apply(changes, "requestedDeliveryDate", extraction.getRequestedDeliveryDate(), request.requestedDeliveryDate(),
+                extraction::setRequestedDeliveryDate);
+        apply(changes, "currency", extraction.getCurrency(), request.currency(), extraction::setCurrency);
+        applyAmount(changes, "subtotal", extraction.getSubtotal(), request.subtotal(), extraction::setSubtotal);
+        applyAmount(changes, "taxAmount", extraction.getTaxAmount(), request.taxAmount(), extraction::setTaxAmount);
+        applyAmount(changes, "totalAmount", extraction.getTotalAmount(), request.totalAmount(), extraction::setTotalAmount);
+        apply(changes, "notes", extraction.getNotes(), request.notes(), extraction::setNotes);
+        for (OrderExtractionLine line : extraction.getLines()) {
+            UpdateExtractionRequest.Line update = requestedLines.get(line.getLineNumber());
+            String prefix = "lines[" + line.getLineNumber() + "].";
+            apply(changes, prefix + "productCode", line.getProductCode(), update.productCode(), line::setProductCode);
+            apply(changes, prefix + "description", line.getDescription(), update.description(), line::setDescription);
+            applyAmount(changes, prefix + "quantity", line.getQuantity(), update.quantity(), line::setQuantity);
+            apply(changes, prefix + "unitOfMeasure", line.getUnitOfMeasure(), update.unitOfMeasure(),
+                    line::setUnitOfMeasure);
+            applyAmount(changes, prefix + "unitPrice", line.getUnitPrice(), update.unitPrice(), line::setUnitPrice);
+            applyAmount(changes, prefix + "lineTotal", line.getLineTotal(), update.lineTotal(), line::setLineTotal);
+        }
+
+        if (!changes.isEmpty()) {
+            documents.markInReview(documentId);
+            try {
+                extractions.saveAndFlush(extraction);
+            } catch (ObjectOptimisticLockingFailureException e) {
+                // Another save committed between our version check and this write.
+                throw ExtractionConflictException.staleVersion();
+            }
+            audit.record(documentId, AuditEventType.EXTRACTION_EDITED, currentUserProvider.currentUser().username(),
+                    Map.of("changedFields", changes));
+        }
+        return toView(extraction);
+    }
+
+    private static <T> void apply(List<String> changes, String field, T current, T requested, Consumer<T> setter) {
+        T normalised = requested instanceof String text && text.isBlank() ? null : requested;
+        if (!Objects.equals(current, normalised)) {
+            setter.accept(normalised);
+            changes.add(field);
+        }
+    }
+
+    /** Compares amounts by value, so 2.5 and 2.50 count as the same. */
+    private static void applyAmount(List<String> changes, String field, BigDecimal current, BigDecimal requested,
+                                    Consumer<BigDecimal> setter) {
+        boolean same = current == null ? requested == null : requested != null && current.compareTo(requested) == 0;
+        if (!same) {
+            setter.accept(requested);
+            changes.add(field);
+        }
     }
 
     private void saveResult(UUID documentId, OrderExtractionResult result) {

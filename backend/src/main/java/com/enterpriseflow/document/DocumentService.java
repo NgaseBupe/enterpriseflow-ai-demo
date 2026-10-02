@@ -103,6 +103,12 @@ public class DocumentService {
         find(id).markExtracted();
     }
 
+    /** @throws IllegalDocumentStateException unless the document is extracted or already in review */
+    @Transactional
+    public void markInReview(UUID id) {
+        find(id).markInReview();
+    }
+
     @Transactional
     public void markExtractionFailed(UUID id, String reason) {
         find(id).markExtractionFailed(reason);
