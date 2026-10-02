@@ -33,9 +33,10 @@ Each user story is also a GitHub issue; the issue number is shown where one exis
   - [x] Review fixes: R-012 to R-016
 - [x] #9 Extract order data with AI: AI module, mock provider, status rules, extraction screen
   - [x] Review fix: R-018
-- [ ] #10 Review the extracted order next to the document
-  - [ ] Endpoint that serves the original file (inline, detected type, `nosniff`, restrictive CSP)
-  - [ ] Side-by-side screen: document viewer and extracted data
+- [x] #10 Review the extracted order next to the document
+  - [x] Endpoint that serves the original file (inline, detected type, `nosniff`, restrictive CSP)
+  - [x] Side-by-side screen: document viewer and extracted data
+  - [x] Review fixes: R-022, R-023
 - [ ] #11 Correct the extracted data
   - [ ] `PUT /api/documents/{id}/extraction` for header and existing lines
   - [ ] Editable form; status becomes In review; `EXTRACTION_EDITED` audit event
@@ -98,7 +99,8 @@ Each user story is also a GitHub issue; the issue number is shown where one exis
 *Goal: anyone can run it and understand it.*
 
 - [ ] Dockerfiles for backend and frontend (nginx); `docker compose up` runs everything
-- [ ] Synthetic sample purchase orders (PDF and photo)
+- [ ] Synthetic sample purchase orders (PDF and photo) whose content matches the mock's output (R-025)
+- [ ] Check the review screen in Safari and Firefox (R-024)
 - [ ] OpenAPI / Swagger UI
 - [ ] Structured JSON logging with correlation IDs
 - [ ] Test coverage report (JaCoCo)
