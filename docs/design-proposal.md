@@ -166,6 +166,7 @@ enterpriseflow-ai-demo/
 ├── docs/
 │   ├── design-proposal.md           # this document
 │   ├── review-log.md                # findings recorded as each story is reviewed
+│   ├── backlog.md                   # every planned task, ticked off as it's merged
 │   ├── architecture-review.md
 │   ├── performance-review.md        # includes the improvement case study (§11)
 │   ├── database-review.md
