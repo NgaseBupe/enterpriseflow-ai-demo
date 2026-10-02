@@ -11,6 +11,27 @@
   font-weight: 500;
 }
 
+.headingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.editButton {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.editButton:hover {
+  background: var(--color-info-bg);
+}
+
 .source {
   margin-top: calc(-1 * var(--space-2));
   color: var(--color-text-muted);

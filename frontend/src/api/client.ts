@@ -4,6 +4,8 @@ export interface ProblemDetail {
   title?: string
   status?: number
   detail?: string
+  /** Present on validation errors: one entry per invalid field, e.g. { field: 'lines[0].quantity', ... }. */
+  errors?: { field: string; message: string }[]
 }
 
 export class ApiError extends Error {
