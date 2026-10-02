@@ -45,6 +45,41 @@ export function useExtraction(documentId: string, enabled: boolean) {
   })
 }
 
+export interface ExtractionUpdate {
+  version: number
+  poNumber: string | null
+  poDate: string | null
+  customerName: string | null
+  customerEmail: string | null
+  customerPhone: string | null
+  deliveryAddress: string | null
+  requestedDeliveryDate: string | null
+  currency: string | null
+  subtotal: number | null
+  taxAmount: number | null
+  totalAmount: number | null
+  notes: string | null
+  lines: ExtractionLine[]
+}
+
+/** Saves a reviewer's corrections. The response is the updated extraction. */
+export function useUpdateExtraction(documentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (update: ExtractionUpdate) =>
+      request<OrderExtraction>(`/api/documents/${encodeURIComponent(documentId)}/extraction`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(update),
+      }),
+    onSuccess: (extraction) => {
+      queryClient.setQueryData(['documents', 'detail', documentId, 'extraction'], extraction)
+      // The document's status may have changed to In review.
+      return queryClient.invalidateQueries({ queryKey: ['documents'], refetchType: 'active' })
+    },
+  })
+}
+
 /** Starts (or retries) extraction. The response is the document with its new status. */
 export function useExtractDocument(documentId: string) {
   const queryClient = useQueryClient()

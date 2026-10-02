@@ -55,6 +55,13 @@
   color: var(--color-text-muted);
 }
 
+.success {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
 .error {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius);

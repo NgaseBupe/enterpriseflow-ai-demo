@@ -33,6 +33,12 @@ The topic reviews (`architecture-review.md`, `database-review.md`, `security-rev
 | [R-023](#r-023-amounts-crowded-and-then-overflowed-the-line-items-table) | Frontend | Low | Amounts crowded, and then overflowed, the line-items table | Fixed |
 | [R-024](#r-024-pdf-rendering-cannot-be-checked-automatically) | Testing | Low | PDF rendering cannot be checked automatically | Checked by hand (Chrome) |
 | [R-025](#r-025-the-mock-ai-does-not-read-the-document) | Demo | Low | The mock AI does not read the document | Open (Sprint 6) |
+| [R-026](#r-026-negative-numbers-got-a-confusing-message) | Frontend | Low | Negative numbers got a confusing message | Fixed |
+| [R-027](#r-027-a-confirmed-extraction-could-be-saved-without-changes) | Extraction | Medium | A confirmed extraction could be "saved" without changes | Fixed (test with #12) |
+| [R-028](#r-028-a-late-version-clash-would-return-500) | Extraction | Medium | A late version clash would return 500 | Fixed (no automated test) |
+| [R-029](#r-029-edit-audit-events-record-field-names-only) | Audit | Low | Edit audit events record field names only | Open (Sprint 4) |
+| [R-030](#r-030-validation-rules-exist-on-both-client-and-server) | Maintainability | Low | Validation rules exist on both client and server | Accepted |
+| [R-031](#r-031-a-lint-warning-passed-local-checks-and-failed-ci) | Process | Medium | A lint warning passed local checks and failed CI | Fixed |
 
 ---
 
@@ -266,4 +272,55 @@ Reviewed before merge using screenshots of the running app (headless Chrome) and
 - **Found by:** comparing the screen with the original document (Kasonde Engineering) and the extracted data (Chanda Hardware).
 - **Explanation:** the mock returns a fixed order chosen from the file's bytes, not its text, which is expected for a stand-in. But in a demo, a mismatch with the visible document looks like a defect.
 - **Planned fix (Sprint 6):** ship synthetic sample purchase orders whose content matches what the mock returns for them, as design §7.2 intends.
+
+---
+
+## Story #11 — Correct the extracted data
+
+Reviewed before merge. The API was also exercised against the running app: a valid correction, the same request again with the old version, and invalid values.
+
+### R-026: Negative numbers got a confusing message
+
+- **Found by:** reading the test output. A quantity of `-1` produced *"Enter a number with up to 3 decimals"*, which is misleading because -1 is a number.
+- **Root cause:** the format rule rejected the minus sign before the range rule could run.
+- **Fix:** the format rule accepts a leading minus, so negative values reach the range rule: *"Must be greater than 0"* for quantities, *"Must be 0 or more"* for amounts.
+- **Validation:** the test expectations were changed first; both tests failed, then passed after the fix.
+
+### R-027: A confirmed extraction could be "saved" without changes
+
+- **Found by:** code review of the first version of `updateExtraction`.
+- **Problem:** the status check happened only when something had changed, so sending unchanged data for a confirmed extraction returned 200 instead of refusing the edit.
+- **Fix:** the status (Extracted or In review) is checked before anything else.
+- **Validation:** `refusesEditsBeforeExtraction` covers the Uploaded case. The Confirmed case needs the confirm action, so its test is added with story #12.
+
+### R-028: A late version clash would return 500
+
+- **Found by:** code review.
+- **Problem:** the explicit version check catches most stale edits, but if two saves pass the check at the same moment, Hibernate's own version check fails at write time with `ObjectOptimisticLockingFailureException`, which the catch-all handler turned into a 500.
+- **Fix:** that exception is converted into the same 409 "Changed by someone else".
+- **Gap:** the race is hard to reproduce reliably in a test, so this path has **no automated test**. To revisit in Sprint 2 with a test that holds two transactions open.
+
+### R-029: Edit audit events record field names only
+
+- **Observation:** `EXTRACTION_EDITED` records *which* fields changed (for example `customerName`, `lines[2].quantity`), not the old and new values.
+- **Planned (Sprint 4):** record values as well, together with the audit timeline screen.
+
+### R-030: Validation rules exist on both client and server
+
+- **Observation:** limits and formats (lengths, decimals, currency code, email) are defined in Bean Validation on the server and in a Zod schema in the browser.
+- **Decision:** accepted. The browser copy gives instant feedback, and the server stays the authority. Drift is caught by tests on both sides: `rejectsInvalidValuesWithAMessagePerField` on the server, and `applies the same rules as the server` in the client. Server messages are also shown next to the matching field, so a missed rule still produces a useful message.
+
+---
+
+## Found by CI
+
+### R-031: A lint warning passed local checks and failed CI
+
+- **Found by:** the CI run for PR #20 (story #10). The frontend job failed on `oxlint --deny-warnings`:
+  *"Fast refresh only works when a file only exports components"* in `DocumentViewer.tsx`.
+- **Problem in the code:** the component file also exported a helper function (`contentUrl`). React's fast refresh can only hot-reload files that export components alone.
+- **Problem in the process (the more important one):** the warning was there locally too, but the local check filtered the linter's output for error patterns that did not match oxlint's `Warning:` lines, and **ignored the exit code**. The check reported success while the linter had failed.
+- **Fix (code):** the URL helper moved to the documents API module (`documentContentUrl`), where API addresses belong. Fixed on the story #10 branch and merged into #11.
+- **Fix (process):** checks now pass or fail **on the command's exit code** (`npm run lint && npm run typecheck && …`), never on searching its output.
+- **Lesson:** CI is the safety net that exposed this. A check that inspects text can be wrong about success; the exit code cannot.
 

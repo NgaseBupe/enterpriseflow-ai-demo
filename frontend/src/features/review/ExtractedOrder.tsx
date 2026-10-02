@@ -6,8 +6,8 @@ function text(value: string | null) {
   return value ?? '—'
 }
 
-/** Read-only view of the extracted order. Editing arrives with the review screen. */
-export function ExtractedOrder({ extraction }: { extraction: OrderExtraction }) {
+/** Read-only view of the extracted order, with an Edit action when corrections are allowed. */
+export function ExtractedOrder({ extraction, onEdit }: { extraction: OrderExtraction; onEdit?: () => void }) {
   // The currency is shown once, in the column headings, so amounts stay on one line.
   const inCurrency = extraction.currency ? ` (${extraction.currency})` : ''
   return (
@@ -15,7 +15,14 @@ export function ExtractedOrder({ extraction }: { extraction: OrderExtraction }) 
       <p className={styles.banner} role="note">
         AI-generated information — human review required.
       </p>
-      <h2 id="extracted-order-heading">Extracted order</h2>
+      <div className={styles.headingRow}>
+        <h2 id="extracted-order-heading">Extracted order</h2>
+        {onEdit && (
+          <button type="button" className={styles.editButton} onClick={onEdit}>
+            Edit
+          </button>
+        )}
+      </div>
       <p className={styles.source}>
         Extracted by {extraction.aiProvider} ({extraction.aiModel})
         {extraction.aiConfidence !== null && <> · confidence {Math.round(extraction.aiConfidence * 100)}%</>}

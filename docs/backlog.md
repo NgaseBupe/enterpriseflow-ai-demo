@@ -37,9 +37,10 @@ Each user story is also a GitHub issue; the issue number is shown where one exis
   - [x] Endpoint that serves the original file (inline, detected type, `nosniff`, restrictive CSP)
   - [x] Side-by-side screen: document viewer and extracted data
   - [x] Review fixes: R-022, R-023
-- [ ] #11 Correct the extracted data
-  - [ ] `PUT /api/documents/{id}/extraction` for header and existing lines
-  - [ ] Editable form; status becomes In review; `EXTRACTION_EDITED` audit event
+- [x] #11 Correct the extracted data
+  - [x] `PUT /api/documents/{id}/extraction` for header and existing lines, with version check and per-field errors
+  - [x] Editable form; status becomes In review; `EXTRACTION_EDITED` audit event
+  - [x] Review fixes: R-026, R-027, R-028
 - [ ] #12 Confirm the extracted order
   - [ ] `POST /api/documents/{id}/review/confirm`, with a confirmation dialog; extraction read-only afterwards
   - [ ] `EXTRACTION_CONFIRMED` audit event
@@ -59,7 +60,8 @@ Each user story is also a GitHub issue; the issue number is shown where one exis
 - [ ] Line-items grid: add, remove and edit lines
 - [ ] "AI extracted" / "Edited" badges from field provenance
 - [ ] Typed AI snapshot that keeps decimal precision (R-005)
-- [ ] Optimistic locking surfaced in the UI ("changed by someone else")
+- [x] Optimistic locking surfaced in the UI ("changed by someone else"), delivered with #11
+- [ ] Test for a version clash between two open transactions (R-028)
 - [ ] Application validation before the database, so CHECK constraints are only a last line of defence (R-003)
 - [ ] One mock sample with a deliberate arithmetic error
 

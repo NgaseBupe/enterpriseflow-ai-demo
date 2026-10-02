@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { errorMessage } from '../../api/client'
 import type { DocumentStatus } from '../../api/documents'
@@ -8,8 +9,10 @@ import { formatDateTime, formatFileSize } from '../../lib/format'
 import { DocumentViewer } from './DocumentViewer'
 import styles from './DocumentReviewPage.module.css'
 import { ExtractedOrder } from './ExtractedOrder'
+import { ExtractionForm } from './ExtractionForm'
 
 const HAS_EXTRACTION: DocumentStatus[] = ['EXTRACTED', 'IN_REVIEW', 'CONFIRMED']
+const EDITABLE: DocumentStatus[] = ['EXTRACTED', 'IN_REVIEW']
 
 const TYPE_LABELS: Record<string, string> = {
   'application/pdf': 'PDF',
@@ -24,6 +27,9 @@ export function DocumentReviewPage() {
   const hasExtraction = !!data && HAS_EXTRACTION.includes(data.status)
   const extraction = useExtraction(id, hasExtraction)
   const extract = useExtractDocument(id)
+  const [editing, setEditing] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const canEdit = !!data && EDITABLE.includes(data.status)
 
   return (
     <section>
@@ -92,7 +98,34 @@ export function DocumentReviewPage() {
                   {errorMessage(extraction.error)}
                 </p>
               )}
-              {extraction.data && <ExtractedOrder extraction={extraction.data} />}
+              {saved && !editing && (
+                <p className={styles.success} role="status">
+                  Changes saved.
+                </p>
+              )}
+              {extraction.data && editing && (
+                <ExtractionForm
+                  extraction={extraction.data}
+                  onCancel={() => setEditing(false)}
+                  onSaved={() => {
+                    setEditing(false)
+                    setSaved(true)
+                  }}
+                />
+              )}
+              {extraction.data && !editing && (
+                <ExtractedOrder
+                  extraction={extraction.data}
+                  onEdit={
+                    canEdit
+                      ? () => {
+                          setSaved(false)
+                          setEditing(true)
+                        }
+                      : undefined
+                  }
+                />
+              )}
             </section>
           </div>
         </>
