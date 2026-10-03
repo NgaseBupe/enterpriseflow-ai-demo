@@ -32,7 +32,7 @@ The topic reviews (`architecture-review.md`, `database-review.md`, `security-rev
 | [R-022](#r-022-the-download-header-used-email-style-encoding) | API | Low | The download header used email-style encoding | Fixed |
 | [R-023](#r-023-amounts-crowded-and-then-overflowed-the-line-items-table) | Frontend | Low | Amounts crowded, and then overflowed, the line-items table | Fixed |
 | [R-024](#r-024-pdf-rendering-cannot-be-checked-automatically) | Testing | Low | PDF rendering cannot be checked automatically | Checked by hand (Chrome) |
-| [R-025](#r-025-the-mock-ai-does-not-read-the-document) | Demo | Low | The mock AI does not read the document | Open (Sprint 6) |
+| [R-025](#r-025-the-mock-ai-does-not-read-the-document) | Demo | Low | The mock AI does not read the document | Fixed (Sprint 1 close) |
 | [R-026](#r-026-negative-numbers-got-a-confusing-message) | Frontend | Low | Negative numbers got a confusing message | Fixed |
 | [R-027](#r-027-a-confirmed-extraction-could-be-saved-without-changes) | Extraction | Medium | A confirmed extraction could be "saved" without changes | Fixed |
 | [R-028](#r-028-a-late-version-clash-would-return-500) | Extraction | Medium | A late version clash would return 500 | Fixed (no automated test) |
@@ -274,6 +274,7 @@ Reviewed before merge using screenshots of the running app (headless Chrome) and
 - **Found by:** comparing the screen with the original document (Kasonde Engineering) and the extracted data (Chanda Hardware).
 - **Explanation:** the mock returns a fixed order chosen from the file's bytes, not its text, which is expected for a stand-in. But in a demo, a mismatch with the visible document looks like a defect.
 - **Planned fix (Sprint 6):** ship synthetic sample purchase orders whose content matches what the mock returns for them, as design §7.2 intends.
+- **Fixed early, at the Sprint 1 close,** so the first demo would not look broken. Three samples in `sample-documents/` (two PDFs and a "scanned" PNG) are printed with exactly the data the mock returns for each file. The mock picks the customer from a hash of the file's bytes, so each sample was rendered until its hash selected the matching customer. `SampleDocumentsTest` keeps samples and mock in sync. The README states plainly that the app currently runs on a simulated AI.
 
 ---
 

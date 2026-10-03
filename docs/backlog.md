@@ -47,7 +47,8 @@ Each user story is also a GitHub issue; the issue number is shown where one exis
   - [x] Test for R-027 (no edits once confirmed)
 - [ ] **Sprint close**
   - [ ] Merge `develop` into `main` (closes the sprint's issues)
-  - [ ] README: what it is, how to run it, first screenshots
+  - [x] Synthetic sample documents that match the mock's output (R-025, brought forward from Sprint 6)
+  - [x] README: what it is, how to run it, first screenshots
   - [ ] Short demo recording of the full workflow
 
 ## Sprint 2 — Trust the data
@@ -102,7 +103,6 @@ Each user story is also a GitHub issue; the issue number is shown where one exis
 *Goal: anyone can run it and understand it.*
 
 - [ ] Dockerfiles for backend and frontend (nginx); `docker compose up` runs everything
-- [ ] Synthetic sample purchase orders (PDF and photo) whose content matches the mock's output (R-025)
 - [ ] Check the review screen in Safari and Firefox (R-024)
 - [ ] Accessibility pass: inert background behind dialogs, keyboard walkthrough (R-033)
 - [ ] OpenAPI / Swagger UI
